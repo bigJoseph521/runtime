@@ -67,7 +67,9 @@ class CHO(Indicator):
         if len(bars) < self.required_history:
             return None
 
-        if self._ad is None:
+        was_uninitialized = self._ad is None
+
+        if was_uninitialized:
             ad = 0.0
             fast_ema = 0.0
             slow_ema = 0.0
@@ -110,14 +112,28 @@ class CHO(Indicator):
             self._fast_ema = fast_ema
             self._slow_ema = slow_ema
 
-        elif is_new_bar:
+        if (
+            self._ad is None
+            or self._fast_ema is None
+            or self._slow_ema is None
+        ):
+            return None
+
+        # Work with non-optional local values. Besides making the invariant
+        # explicit to type checkers, this prevents partially initialized state
+        # from ever reaching the arithmetic below.
+        ad = self._ad
+        fast_ema = self._fast_ema
+        slow_ema = self._slow_ema
+
+        if is_new_bar and not was_uninitialized:
             bar = bars[1]
             high = float(bar.high)
             low = float(bar.low)
             price_range = high - low
 
             if price_range != 0.0:
-                self._ad += (
+                ad += (
                     (
                         2.0 * float(bar.close)
                         - high
@@ -127,19 +143,18 @@ class CHO(Indicator):
                     * float(bar.volume)
                 )
 
-            self._fast_ema += self._fast_alpha * (
-                self._ad - self._fast_ema
-            )
+            fast_ema += self._fast_alpha * (ad - fast_ema)
+            slow_ema += self._slow_alpha * (ad - slow_ema)
 
-            self._slow_ema += self._slow_alpha * (
-                self._ad - self._slow_ema
-            )
+            self._ad = ad
+            self._fast_ema = fast_ema
+            self._slow_ema = slow_ema
 
         bar = bars[0]
         high = float(bar.high)
         low = float(bar.low)
         price_range = high - low
-        current_ad = self._ad
+        current_ad = ad
 
         if price_range != 0.0:
             current_ad += (
@@ -153,15 +168,15 @@ class CHO(Indicator):
             )
 
         current_fast_ema = (
-            self._fast_ema
+            fast_ema
             + self._fast_alpha
-            * (current_ad - self._fast_ema)
+            * (current_ad - fast_ema)
         )
 
         current_slow_ema = (
-            self._slow_ema
+            slow_ema
             + self._slow_alpha
-            * (current_ad - self._slow_ema)
+            * (current_ad - slow_ema)
         )
 
         return PriceValue(

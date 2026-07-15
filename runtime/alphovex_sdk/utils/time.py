@@ -106,7 +106,13 @@ def timeframe_to_timedelta(timeframe: Timeframe) -> timedelta:
         return timedelta(minutes=30)
     elif timeframe == "1h":
         return timedelta(minutes=60)
+    elif timeframe == "4h":
+        return timedelta(hours=4)
     elif timeframe == "1d":
-        return timedelta(minutes=1440)
+        return timedelta(days=1)
+
+    # Defensive runtime protection if an untyped caller bypasses the
+    # Timeframe Literal contract.
+    raise ValueError(f"Unsupported timeframe: {timeframe}")
 
 

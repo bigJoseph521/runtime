@@ -1,3 +1,7 @@
+# Pyright cannot statically evaluate this package's intentionally comprehensive
+# export list, but Python and packaging smoke tests validate it directly.
+# pyright: reportUnsupportedDunderAll=false
+
 from .context import (
     AccountContext,
     DataContext,

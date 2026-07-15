@@ -80,6 +80,9 @@ class CHV(Indicator):
                 self._ema_values.append(self._ema)
 
         elif is_new_bar:
+            if self._ema is None:
+                return None
+
             bar = bars[1]
             price_range = (
                 float(bar.high)
@@ -91,6 +94,9 @@ class CHV(Indicator):
             )
 
             self._ema_values.append(self._ema)
+
+        if self._ema is None or not self._ema_values:
+            return None
 
         bar = bars[0]
         current_range = (

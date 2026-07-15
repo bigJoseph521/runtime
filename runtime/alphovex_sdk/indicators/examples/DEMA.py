@@ -98,7 +98,7 @@ class DEMA(Indicator):
 
                 if count == self._period:
                     ema2 = ema1
-                elif count > self._period:
+                elif count > self._period and ema2 is not None:
                     ema2 += self._alpha * (
                         ema1 - ema2
                     )
