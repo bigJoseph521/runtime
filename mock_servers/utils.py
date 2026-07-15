@@ -11,6 +11,6 @@ def file_sha256(path):
 
 print(
     file_sha256(
-        "C:/Users/Administrator/Videos/v1.1/runtime/runtime/data/samples/sma_crossover/sma_crossover.zip"
+        "C:/Users/Administrator/Videos/v1.1/runtime/runtime/data/samples/sma_5m/sma_crossover.zip"
     )
 )
