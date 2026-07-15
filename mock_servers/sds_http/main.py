@@ -18,7 +18,7 @@ deployments: dict[str, dict[str, Any]] = {
         "mode": "paper",
         "deployment_id": DEPLOYMENT_ID,
         "entrypoint": "sma_crossover:SMACrossOver",
-        "artifact_uri": "file:///C:/Users/Administrator/Videos/v1.1/runtime_v2/data/samples/sma_daily_summary/sma_crossover.zip",
+        "artifact_uri": "./data/samples/sma_daily_summary/sma_crossover.zip",
         "params": {
             "fast": 10,
             "slow": 30,
