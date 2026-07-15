@@ -29,7 +29,8 @@ deployments: dict[str, dict[str, Any]] = {
             "equity": 12000,
             "initial_margin": 0,
             "maintenance_margin": 0,
-            "available_funds": 12000
+            "available_funds": 12000,
+            "broker": "Alpaca"
         },
         "positions": [],
         # "orders": [],
