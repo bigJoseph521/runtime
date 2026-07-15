@@ -29,7 +29,9 @@ from src.application.symbol_reference.symbol_reference import SymbolReferenceSer
 from src.infrastructure.config.arg_parser import arg_parse
 from src.infrastructure.config.config import RuntimeConfig
 from src.infrastructure.http.sds_client import SDSHTTPClient
-from src.infrastructure.http.hds_client import HistoricalDataServiceClient
+from src.infrastructure.grpc.historical_data_client import (
+    GRPCHistoricalDataClient,
+)
 from src.infrastructure.storage.client import StorageClient
 from src.infrastructure.strategy_loader.local_loader import LocalStrategyLoader
 from src.infrastructure.nats.nats_client import NATSMarketDataClient
@@ -87,10 +89,10 @@ async def main():
             )
             params_context.set_params(deployment_info.params)            
             await status_manager.transform(new_status=Status.STARTING)
-            hds_client = HistoricalDataServiceClient(
-                hds_base_url= config.HDS_base_url,
-                time_out= config.http_timeout,
-                logger= logger
+            hds_client = GRPCHistoricalDataClient(
+                target=config.HDS_grpc_target,
+                timeout_seconds=config.grpc_timeout_seconds,
+                logger=logger,
             )
 
             data_context = RuntimeDataContext(
@@ -262,6 +264,7 @@ async def main():
                 )
 
                 await market_data_listener.stop()
+                await hds_client.close()
 
                 # Close these too if their classes provide async close methods.
                 # await grpc_client.close()

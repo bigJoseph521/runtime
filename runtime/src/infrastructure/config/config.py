@@ -19,7 +19,8 @@ class RuntimeConfig:
         self.risk_grpc_IP : str | None = None
         
         self.SDS_base_url : str | None = None
-        self.HDS_base_url : str | None = None
+        self.HDS_grpc_target: str = "127.0.0.1:52051"
+        self.grpc_timeout_seconds: float = 10.0
         self.NATS_server_url: str | None = None
         self.NATS_subject_prefix: str | None = None
         self.timeframe_service_base_url: str | None = None
@@ -49,7 +50,13 @@ class RuntimeConfig:
         self.risk_grpc_IP = os.getenv("SWR_RISK_GRPC_TARGET", "127.0.0.1:51051")
         
         self.SDS_base_url = os.getenv("STRATEGY_DEPLOYMENT_SERVICE_BASE_URL", "http://127.0.0.1:5010")
-        self.HDS_base_url = os.getenv("HISTORICAL_DATA_SERVICE_BASE_URL", "http://127.0.0.1:5020")
+        self.HDS_grpc_target = os.getenv(
+            "HISTORICAL_DATA_GRPC_TARGET",
+            "127.0.0.1:52051",
+        )
+        self.grpc_timeout_seconds = float(
+            os.getenv("HISTORICAL_DATA_GRPC_TIMEOUT_SECONDS", "10")
+        )
         self.NATS_server_url = os.getenv(
             "NATS_SERVER_URL",
             os.getenv("NATS_SEVER_BASE_URL", "nats://127.0.0.1:4222"),

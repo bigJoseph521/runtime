@@ -147,16 +147,9 @@ class RuntimeDataContext(DataContext):
     def get_latest_bars(self, symbol, timeframe, *, start, count, limit = None):
         self._validate_symbol(symbol)
         buf = self._get_bar_buffer(symbol=symbol, tf=timeframe)
-        # TODO
-        if buf.size == 0:    
-            _BarRows = self._hds_client.get_bar_history(
-                symbol=symbol,
-                timeframe=timeframe,
-                window= start + count
-            )
-            if _BarRows is not None:
-                for i in len(_BarRows):
-                    buf.append(_BarRows[i+start])
+        # Historical seeding is asynchronous and is owned by WarmUpService.
+        # This SDK-facing method remains synchronous and reads the seeded/live
+        # ring buffer only.
         
 
         ts = buf.view("ts")

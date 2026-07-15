@@ -8,13 +8,13 @@ from application.context.logging_context import RuntimeLoggingContext
 from application.event_handling.external_event_bus import ExternalEventBus
 from application.event_handling.events_model import ExternalEventType, InternalEventType
 from application.event_handling.internal_event_bus import InternalEventBus
-from infrastructure.http.hds_client import HistoricalDataServiceClient
+from application.ports.historical_data import HistoricalDataClientPort
 
 
 class WarmUpService:
     def __init__(
         self,
-        hds_client: HistoricalDataServiceClient,
+        hds_client: HistoricalDataClientPort,
         logger: RuntimeLoggingContext,
         external_event_bus: ExternalEventBus,
         internal_event_bus: InternalEventBus
@@ -83,4 +83,3 @@ class WarmUpService:
                 },
             }
         )
-
