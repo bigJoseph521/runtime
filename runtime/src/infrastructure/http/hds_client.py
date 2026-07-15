@@ -66,6 +66,5 @@ class HistoricalDataServiceClient(HistoricalDataClientPort):
             close=raw["close"],
             volume=raw["volume"]
         )
-        return new_Bar
-        
+        return new_Bar    
         

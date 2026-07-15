@@ -72,7 +72,7 @@ class SDSHTTPClient:
                 invalid_fields=invalid_fields,
                 raw_response=response.text if "response" in locals() else None,
             )
-            self._event_bus.publish({
+            await self._event_bus.publish({
                 "type": InternalEventType.STATUS_CHANGED,
                 "new_status": Status.FAILED
             })
