@@ -1,0 +1,14 @@
+{
+  "indicator": "ATR",
+  "primary_window": 14,
+  "inputs": {
+    "period": 14,
+    "smoothing": "rolling SMA recurrence",
+    "price_fields": [
+      "high",
+      "low",
+      "close"
+    ]
+  },
+  "notes": "True range averaged over 14 bars."
+}

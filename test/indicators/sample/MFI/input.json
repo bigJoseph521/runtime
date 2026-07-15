@@ -1,0 +1,10 @@
+{
+  "indicator": "MFI",
+  "primary_window": 14,
+  "inputs": {
+    "period": 14,
+    "applied_price": "typical_price",
+    "volume_type": "VOLUME_TICK"
+  },
+  "notes": "Money Flow Index."
+}

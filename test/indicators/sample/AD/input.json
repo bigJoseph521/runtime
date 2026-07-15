@@ -1,0 +1,13 @@
+{
+  "indicator": "AD",
+  "primary_window": null,
+  "inputs": {
+    "volume_type": "VOLUME_TICK",
+    "price_fields": [
+      "high",
+      "low",
+      "close"
+    ]
+  },
+  "notes": "Accumulation/Distribution has no rolling window."
+}

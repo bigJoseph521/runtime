@@ -1,0 +1,10 @@
+{
+  "indicator": "TEMA",
+  "primary_window": 14,
+  "inputs": {
+    "period": 14,
+    "smoothing": "EMA",
+    "applied_price": "close"
+  },
+  "notes": "Triple Exponential Moving Average."
+}

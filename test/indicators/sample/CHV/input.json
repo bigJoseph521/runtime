@@ -1,0 +1,14 @@
+{
+  "indicator": "CHV",
+  "primary_window": [
+    10,
+    10
+  ],
+  "inputs": {
+    "ema_period": 10,
+    "roc_period": 10,
+    "smoothing": "EMA",
+    "source": "high_minus_low"
+  },
+  "notes": "Chaikin Volatility compares EMA(high-low) with its value 10 bars earlier."
+}

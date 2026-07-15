@@ -1,0 +1,19 @@
+{
+  "indicator": "Gator",
+  "primary_window": [
+    13,
+    8,
+    5
+  ],
+  "inputs": {
+    "jaws_period": 13,
+    "jaws_shift": 8,
+    "teeth_period": 8,
+    "teeth_shift": 5,
+    "lips_period": 5,
+    "lips_shift": 3,
+    "smoothing": "SMMA",
+    "applied_price": "median_price"
+  },
+  "notes": "Derived from Alligator lines."
+}

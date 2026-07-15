@@ -1,0 +1,14 @@
+{
+  "indicator": "MI",
+  "primary_window": [
+    9,
+    25
+  ],
+  "inputs": {
+    "ema_period": 9,
+    "ema_stages": 2,
+    "sum_period": 25,
+    "source": "high_minus_low"
+  },
+  "notes": "Mass Index."
+}

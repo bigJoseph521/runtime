@@ -1,0 +1,11 @@
+{
+  "indicator": "StdDev",
+  "primary_window": 20,
+  "inputs": {
+    "period": 20,
+    "smoothing": "SMA",
+    "applied_price": "close",
+    "deviation_multiplier": 1.0
+  },
+  "notes": "Population standard deviation over 20 closes."
+}

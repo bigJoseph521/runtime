@@ -1,0 +1,10 @@
+{
+  "indicator": "MarketFacilitationIndex",
+  "primary_window": null,
+  "inputs": {
+    "point": 0.0001,
+    "volume_type": "VOLUME_TICK",
+    "current_bar_elapsed_fraction": "sequence/5"
+  },
+  "notes": "No rolling window; current-bar normalization uses the mock sequence."
+}

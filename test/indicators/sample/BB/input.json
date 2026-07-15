@@ -1,0 +1,12 @@
+{
+  "indicator": "BB",
+  "primary_window": 20,
+  "inputs": {
+    "period": 20,
+    "deviation": 2.0,
+    "shift": 0,
+    "smoothing": "SMA",
+    "applied_price": "close"
+  },
+  "notes": "Bollinger Bands."
+}

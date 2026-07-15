@@ -1,0 +1,9 @@
+{
+  "indicator": "ColorBars",
+  "primary_window": 1,
+  "inputs": {
+    "comparison_bars": 1,
+    "volume_type": "VOLUME_TICK"
+  },
+  "notes": "Colors bars by current versus previous volume."
+}

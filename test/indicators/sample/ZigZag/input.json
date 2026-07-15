@@ -1,0 +1,15 @@
+{
+  "indicator": "ZigZag",
+  "primary_window": 12,
+  "inputs": {
+    "depth": 12,
+    "deviation_points": 5,
+    "backstep": 3,
+    "point": 0.0001,
+    "price_fields": [
+      "high",
+      "low"
+    ]
+  },
+  "notes": "The generator additionally waits for 100 bars before marking output ready."
+}

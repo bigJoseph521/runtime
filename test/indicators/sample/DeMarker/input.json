@@ -1,0 +1,13 @@
+{
+  "indicator": "DeMarker",
+  "primary_window": 14,
+  "inputs": {
+    "period": 14,
+    "smoothing": "SMA",
+    "price_fields": [
+      "high",
+      "low"
+    ]
+  },
+  "notes": "DeMarker."
+}

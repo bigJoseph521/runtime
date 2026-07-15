@@ -1,0 +1,10 @@
+{
+  "indicator": "Momentum",
+  "primary_window": 14,
+  "inputs": {
+    "period": 14,
+    "applied_price": "close",
+    "scale": 100.0
+  },
+  "notes": "Current close divided by the close 14 bars earlier, multiplied by 100."
+}

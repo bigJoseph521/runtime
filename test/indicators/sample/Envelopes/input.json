@@ -1,0 +1,14 @@
+{
+  "indicator": "Envelopes",
+  "primary_window": 14,
+  "inputs": {
+    "ma_period": 14,
+    "ma_shift": 0,
+    "deviation_percent": 0.1,
+    "upper_multiplier": 1.001,
+    "lower_multiplier": 0.999,
+    "smoothing": "SMA",
+    "applied_price": "close"
+  },
+  "notes": "Envelope deviation is 0.1 percent."
+}

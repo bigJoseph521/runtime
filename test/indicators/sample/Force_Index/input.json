@@ -1,0 +1,11 @@
+{
+  "indicator": "Force_Index",
+  "primary_window": 13,
+  "inputs": {
+    "ma_period": 13,
+    "smoothing": "SMA",
+    "applied_price": "close",
+    "volume_type": "VOLUME_TICK"
+  },
+  "notes": "Volume multiplied by the one-bar change in SMA(close, 13)."
+}

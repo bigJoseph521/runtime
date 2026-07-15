@@ -1,0 +1,11 @@
+{
+  "indicator": "Bears",
+  "primary_window": 13,
+  "inputs": {
+    "period": 13,
+    "smoothing": "EMA",
+    "applied_price": "close",
+    "output_price": "low"
+  },
+  "notes": "Bears Power = low - EMA(close, 13)."
+}

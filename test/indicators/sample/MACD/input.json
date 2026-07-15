@@ -1,0 +1,18 @@
+{
+  "indicator": "MACD",
+  "primary_window": [
+    12,
+    26,
+    9
+  ],
+  "inputs": {
+    "fast_period": 12,
+    "slow_period": 26,
+    "signal_period": 9,
+    "fast_smoothing": "EMA",
+    "slow_smoothing": "EMA",
+    "signal_smoothing": "SMA",
+    "applied_price": "close"
+  },
+  "notes": "Signal line uses SMA in the supplied implementation."
+}

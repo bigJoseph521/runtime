@@ -1,0 +1,11 @@
+{
+  "indicator": "CCI",
+  "primary_window": 14,
+  "inputs": {
+    "period": 14,
+    "constant": 0.015,
+    "smoothing": "SMA",
+    "applied_price": "typical_price"
+  },
+  "notes": "Typical price is (high + low + close) / 3."
+}

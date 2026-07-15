@@ -1,0 +1,11 @@
+{
+  "indicator": "FrAMA",
+  "primary_window": 14,
+  "inputs": {
+    "half_period": 14,
+    "effective_full_window": 28,
+    "fractal_alpha_constant": 4.6,
+    "applied_price": "close"
+  },
+  "notes": "The dimension calculation uses two 14-bar halves over 28 bars."
+}

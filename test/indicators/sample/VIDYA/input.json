@@ -1,0 +1,14 @@
+{
+  "indicator": "VIDYA",
+  "primary_window": [
+    9,
+    12
+  ],
+  "inputs": {
+    "cmo_period": 9,
+    "ema_period": 12,
+    "ema_factor": "2/(12+1)",
+    "applied_price": "close"
+  },
+  "notes": "Variable Index Dynamic Average."
+}

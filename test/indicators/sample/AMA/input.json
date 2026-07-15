@@ -1,0 +1,12 @@
+{
+  "indicator": "AMA",
+  "primary_window": 10,
+  "inputs": {
+    "efficiency_ratio_period": 10,
+    "fast_period": 2,
+    "fast_smoothing_constant": "2/(2+1)",
+    "slow_smoothing_constant_effective": 0.0,
+    "applied_price": "open"
+  },
+  "notes": "The supplied translation states that the slow smoothing constant remains zero."
+}

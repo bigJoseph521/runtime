@@ -1,0 +1,14 @@
+{
+  "indicator": "Heiken_Ashi",
+  "primary_window": 1,
+  "inputs": {
+    "previous_heiken_ashi_bars": 1,
+    "price_fields": [
+      "open",
+      "high",
+      "low",
+      "close"
+    ]
+  },
+  "notes": "Recursive calculation using the previous Heiken-Ashi candle."
+}

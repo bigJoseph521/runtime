@@ -1,0 +1,13 @@
+{
+  "indicator": "ParabolicSAR",
+  "primary_window": null,
+  "inputs": {
+    "step": 0.02,
+    "maximum": 0.2,
+    "price_fields": [
+      "high",
+      "low"
+    ]
+  },
+  "notes": "Recursive trend indicator rather than a fixed-window indicator."
+}

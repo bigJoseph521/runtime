@@ -1,0 +1,14 @@
+{
+  "indicator": "ADXW",
+  "primary_window": 14,
+  "inputs": {
+    "period": 14,
+    "smoothing": "Wilder",
+    "price_fields": [
+      "high",
+      "low",
+      "close"
+    ]
+  },
+  "notes": "Wilder recurrence with period 14."
+}

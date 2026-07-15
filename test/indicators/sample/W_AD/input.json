@@ -1,0 +1,14 @@
+{
+  "indicator": "W_AD",
+  "primary_window": 1,
+  "inputs": {
+    "comparison_bars": 1,
+    "point_threshold": 0.0001,
+    "price_fields": [
+      "high",
+      "low",
+      "close"
+    ]
+  },
+  "notes": "Williams Accumulation/Distribution."
+}

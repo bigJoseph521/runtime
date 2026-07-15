@@ -1,0 +1,9 @@
+{
+  "indicator": "Volumes",
+  "primary_window": 1,
+  "inputs": {
+    "comparison_bars": 1,
+    "volume_type": "VOLUME_TICK"
+  },
+  "notes": "Displays current tick volume and compares it with the previous bar for color."
+}

@@ -1,0 +1,15 @@
+{
+  "indicator": "ADX",
+  "primary_window": 14,
+  "inputs": {
+    "period": 14,
+    "smoothing": "EMA",
+    "ema_alpha": "2/(14+1)",
+    "price_fields": [
+      "high",
+      "low",
+      "close"
+    ]
+  },
+  "notes": "EMA-smoothed +DI, -DI, and DX."
+}

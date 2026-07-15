@@ -1,0 +1,14 @@
+{
+  "indicator": "Fractals",
+  "primary_window": 5,
+  "inputs": {
+    "left_bars": 2,
+    "right_bars": 2,
+    "total_pattern_bars": 5,
+    "price_fields": [
+      "high",
+      "low"
+    ]
+  },
+  "notes": "Bill Williams five-bar fractal pattern."
+}

@@ -1,0 +1,15 @@
+{
+  "indicator": "CHO",
+  "primary_window": [
+    3,
+    10
+  ],
+  "inputs": {
+    "fast_period": 3,
+    "slow_period": 10,
+    "smoothing": "EMA",
+    "source": "AD",
+    "volume_type": "VOLUME_TICK"
+  },
+  "notes": "Chaikin Oscillator."
+}

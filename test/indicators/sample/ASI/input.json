@@ -1,0 +1,15 @@
+{
+  "indicator": "ASI",
+  "primary_window": null,
+  "inputs": {
+    "limit": 300,
+    "point": 0.0001,
+    "price_fields": [
+      "open",
+      "high",
+      "low",
+      "close"
+    ]
+  },
+  "notes": "Uses T=300 points; no rolling period."
+}

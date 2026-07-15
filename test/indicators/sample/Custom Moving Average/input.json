@@ -1,0 +1,11 @@
+{
+  "indicator": "Custom Moving Average",
+  "primary_window": 13,
+  "inputs": {
+    "period": 13,
+    "shift": 0,
+    "smoothing": "SMMA",
+    "applied_price": "close"
+  },
+  "notes": "Custom MA example."
+}

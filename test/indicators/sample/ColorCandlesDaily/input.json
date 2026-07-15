@@ -1,0 +1,8 @@
+{
+  "indicator": "ColorCandlesDaily",
+  "primary_window": null,
+  "inputs": {
+    "color_basis": "day_of_week"
+  },
+  "notes": "No rolling input window."
+}

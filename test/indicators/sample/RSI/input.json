@@ -1,0 +1,10 @@
+{
+  "indicator": "RSI",
+  "primary_window": 14,
+  "inputs": {
+    "period": 14,
+    "smoothing": "Wilder",
+    "applied_price": "close"
+  },
+  "notes": "Relative Strength Index."
+}

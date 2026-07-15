@@ -1,0 +1,16 @@
+{
+  "indicator": "Stochastic",
+  "primary_window": [
+    5,
+    3,
+    3
+  ],
+  "inputs": {
+    "k_period": 5,
+    "d_period": 3,
+    "slowing": 3,
+    "smoothing": "SMA",
+    "price_field": "low_high"
+  },
+  "notes": "Stochastic Oscillator."
+}

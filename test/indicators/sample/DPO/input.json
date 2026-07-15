@@ -1,0 +1,12 @@
+{
+  "indicator": "DPO",
+  "primary_window": 12,
+  "inputs": {
+    "period": 12,
+    "effective_ma_period": 7,
+    "effective_ma_period_formula": "period/2 + 1",
+    "smoothing": "SMA",
+    "applied_price": "close"
+  },
+  "notes": "The implementation computes close minus SMA(close, 7)."
+}

@@ -1,0 +1,11 @@
+{
+  "indicator": "VROC",
+  "primary_window": 25,
+  "inputs": {
+    "period": 25,
+    "effective_index_offset": 24,
+    "volume_type": "VOLUME_TICK",
+    "scale": 100.0
+  },
+  "notes": "Compares current volume with volume at i-(period-1)."
+}

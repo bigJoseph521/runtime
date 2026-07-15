@@ -1,0 +1,11 @@
+{
+  "indicator": "TRIX",
+  "primary_window": 14,
+  "inputs": {
+    "period": 14,
+    "smoothing": "triple EMA",
+    "applied_price": "close",
+    "output": "one_bar_rate_of_change"
+  },
+  "notes": "Triple-smoothed EMA rate of change."
+}

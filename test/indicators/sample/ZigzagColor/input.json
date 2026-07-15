@@ -1,0 +1,15 @@
+{
+  "indicator": "ZigzagColor",
+  "primary_window": 12,
+  "inputs": {
+    "depth": 12,
+    "deviation_points": 5,
+    "backstep": 3,
+    "point": 0.0001,
+    "price_fields": [
+      "high",
+      "low"
+    ]
+  },
+  "notes": "Same ZigZag inputs with separate peak/bottom color buffers."
+}

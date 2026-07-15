@@ -1,0 +1,11 @@
+{
+  "indicator": "Bulls",
+  "primary_window": 13,
+  "inputs": {
+    "period": 13,
+    "smoothing": "EMA",
+    "applied_price": "close",
+    "output_price": "high"
+  },
+  "notes": "Bulls Power = high - EMA(close, 13)."
+}

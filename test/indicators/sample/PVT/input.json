@@ -1,0 +1,10 @@
+{
+  "indicator": "PVT",
+  "primary_window": 1,
+  "inputs": {
+    "comparison_bars": 1,
+    "applied_price": "close",
+    "volume_type": "VOLUME_TICK"
+  },
+  "notes": "Price Volume Trend."
+}

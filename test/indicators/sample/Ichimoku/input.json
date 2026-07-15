@@ -1,0 +1,21 @@
+{
+  "indicator": "Ichimoku",
+  "primary_window": [
+    9,
+    26,
+    52
+  ],
+  "inputs": {
+    "tenkan_period": 9,
+    "kijun_period": 26,
+    "senkou_span_b_period": 52,
+    "senkou_shift": 26,
+    "chikou_shift": -26,
+    "price_fields": [
+      "high",
+      "low",
+      "close"
+    ]
+  },
+  "notes": "Raw buffers are not timestamp-shifted in the generated data."
+}

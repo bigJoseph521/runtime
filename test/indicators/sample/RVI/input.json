@@ -1,0 +1,22 @@
+{
+  "indicator": "RVI",
+  "primary_window": 10,
+  "inputs": {
+    "period": 10,
+    "signal_period": 4,
+    "signal_weights": [
+      1,
+      2,
+      2,
+      1
+    ],
+    "signal_divisor": 6,
+    "price_fields": [
+      "open",
+      "high",
+      "low",
+      "close"
+    ]
+  },
+  "notes": "Relative Vigor Index."
+}

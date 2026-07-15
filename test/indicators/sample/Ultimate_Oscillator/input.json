@@ -1,0 +1,23 @@
+{
+  "indicator": "Ultimate_Oscillator",
+  "primary_window": [
+    7,
+    14,
+    28
+  ],
+  "inputs": {
+    "fast_period": 7,
+    "middle_period": 14,
+    "slow_period": 28,
+    "fast_weight": 4,
+    "middle_weight": 2,
+    "slow_weight": 1,
+    "weight_divisor": 7,
+    "price_fields": [
+      "high",
+      "low",
+      "close"
+    ]
+  },
+  "notes": "Uses the translated ATR helper for each period."
+}

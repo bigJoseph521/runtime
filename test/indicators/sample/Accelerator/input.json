@@ -1,0 +1,16 @@
+{
+  "indicator": "Accelerator",
+  "primary_window": [
+    5,
+    34,
+    5
+  ],
+  "inputs": {
+    "ao_fast_period": 5,
+    "ao_slow_period": 34,
+    "signal_period": 5,
+    "smoothing": "SMA",
+    "applied_price": "median_price"
+  },
+  "notes": "AC = AO - SMA(AO, 5)."
+}

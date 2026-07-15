@@ -1,0 +1,13 @@
+{
+  "indicator": "Price_Channel",
+  "primary_window": 22,
+  "inputs": {
+    "period": 22,
+    "plot_shift": 1,
+    "price_fields": [
+      "high",
+      "low"
+    ]
+  },
+  "notes": "Highest high and lowest low over 22 bars."
+}

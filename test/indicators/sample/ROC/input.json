@@ -1,0 +1,11 @@
+{
+  "indicator": "ROC",
+  "primary_window": 12,
+  "inputs": {
+    "period": 12,
+    "applied_price": "close",
+    "denominator": "current_close",
+    "scale": 100.0
+  },
+  "notes": "The supplied implementation divides by current close rather than the historical close."
+}

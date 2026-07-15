@@ -1,0 +1,12 @@
+{
+  "indicator": "ColorLine",
+  "primary_window": 10,
+  "inputs": {
+    "ema_period": 10,
+    "smoothing": "EMA",
+    "applied_price": "close",
+    "color_segment_length": 100,
+    "color_cycle_length": 300
+  },
+  "notes": "Color segmentation values come from the supplied translation."
+}
