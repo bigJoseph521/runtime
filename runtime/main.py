@@ -171,7 +171,7 @@ async def main():
             )
 
             external_event_bus.subscribe(
-                event_type=ExternalEventType.CURRENT_BAR,
+                event_type=ExternalEventType.TICK,
                 handler=strategy_class.on_tick()
             )
 

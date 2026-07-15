@@ -34,7 +34,10 @@ class ExternalEventBus:
                     event["timeframe"],
                     event["payload"],
                     event.get("completed", False),
-                )
+                )     
+        elif event_type == ExternalEventType.TICK:
+            for handler in self._consumers[event_type]:
+                handler()
         elif event_type == ExternalEventType.WARMUP_BAR:
             for handler in self._consumers[event_type]:
                 handler(
