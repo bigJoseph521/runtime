@@ -22,7 +22,7 @@ class SMACrossOver(Strategy):
             update_mode=IndicatorUpdateMode.TICK
         )
     
-    def on_tick(self, tick: Tick):
+    def on_tick(self):
         fast_sma = self.indicator.get_value(self._fast_sma_handle)
         slow_sma = self.indicator.get_value(self._slow_sma_handle)
 

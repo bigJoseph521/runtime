@@ -346,7 +346,7 @@ class Strategy(ABC):
         -------
         ```python
         class MyStrategy(Strategy):
-            def on_tick(self, tick: Tick) -> None:
+            def on_tick(self) -> None:
                 if not self.data.is_new_bar(
                     symbol=tick.symbol,
                     timeframe=Timeframe.M1,
