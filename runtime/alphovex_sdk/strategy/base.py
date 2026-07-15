@@ -303,7 +303,7 @@ class Strategy(ABC):
         """
         ...
 
-    def on_tick(self, tick: Tick) -> None:
+    def on_tick(self) -> None:
         """
         Handle a new tick event and implement the main market-driven strategy logic.
 
