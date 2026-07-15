@@ -36,7 +36,6 @@ class SMA(Indicator):
     def calculate(
         self,
         bars: list[Bar],
-        *,
         is_new_bar: bool,
     ) -> PriceValue | None:
         if len(bars) < self._period:

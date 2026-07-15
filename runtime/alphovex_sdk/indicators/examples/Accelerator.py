@@ -53,55 +53,34 @@ class Accelerator(Indicator):
         self,
         bars: list[Bar],
         is_new_bar: bool,
-    ) -> tuple[
-        PriceValue,
-        PriceValue,
-        PriceValue,
-    ] | None:
-        if not bars:
+    ) -> PriceValue | None:
+        """Return Awesome Oscillator minus its signal-period SMA.
+
+        Recalculation from the supplied newest-first bar window keeps the
+        implementation correct for both forming-bar updates and new bars.
+        ``is_new_bar`` is accepted as part of the Indicator contract.
+        """
+        del is_new_bar
+
+        if len(bars) < self.required_history:
             return None
 
-        if is_new_bar:
-            self._closed_values = self._current_values.copy()
+        prices = [
+            float(bar.get_price(self._price_type))
+            for bar in bars[: self.required_history]
+        ]
 
-        current_price = float(
-            bars[0].get_price(self._price_type)
-        )
+        awesome_values: list[float] = []
+        for offset in range(self._signal_period):
+            fast_average = (
+                sum(prices[offset : offset + self._fast_period])
+                / self._fast_period
+            )
+            slow_average = (
+                sum(prices[offset : offset + self._slow_period])
+                / self._slow_period
+            )
+            awesome_values.append(fast_average - slow_average)
 
-        current_values: list[PriceValue | None] = []
-        result: list[PriceValue] = []
-
-        for index, period in enumerate(self._periods):
-            closed_value = self._closed_values[index]
-
-            if closed_value is not None:
-                value = (
-                    closed_value * (period - 1)
-                    + current_price
-                ) / period
-
-                current_values.append(value)
-                result.append(PriceValue(value))
-
-            elif len(bars) >= period:
-                value = sum(
-                    float(
-                        bar.get_price(self._price_type)
-                    )
-                    for bar in bars[:period]
-                ) / period
-
-                current_values.append(value)
-                result.append(PriceValue(value))
-
-            else:
-                current_values.append(None)
-                result.append(PriceValue(0.0))
-
-        self._current_values = current_values
-
-        return (
-            result[0],
-            result[1],
-            result[2],
-        )
+        signal = sum(awesome_values) / self._signal_period
+        return PriceValue(awesome_values[0] - signal)

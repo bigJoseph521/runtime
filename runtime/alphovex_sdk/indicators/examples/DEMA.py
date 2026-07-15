@@ -107,6 +107,12 @@ class DEMA(Indicator):
             self._ema2 = ema2
 
         elif is_new_bar:
+            # Both values are initialized together by the warm-up branch.
+            # Keep the explicit guard so static type checkers can prove that
+            # arithmetic below never receives None.
+            if self._ema1 is None or self._ema2 is None:
+                return None
+
             completed_price = float(
                 bars[1].get_price(self._price_type)
             )
@@ -118,6 +124,9 @@ class DEMA(Indicator):
             self._ema2 += self._alpha * (
                 self._ema1 - self._ema2
             )
+
+        if self._ema1 is None or self._ema2 is None:
+            return None
 
         current_ema1 = (
             self._ema1

@@ -17,6 +17,7 @@ packages = [
     "alphovex_sdk.context",
     "alphovex_sdk.errors",
     "alphovex_sdk.indicators",
+    "alphovex_sdk.indicators.examples",
     "alphovex_sdk.models",
     "alphovex_sdk.strategy",
     "alphovex_sdk.typedefs",
