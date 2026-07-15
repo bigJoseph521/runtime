@@ -37,7 +37,7 @@ class RuntimeOrderContext(OrderContext):
         position_context: RuntimePositionContext
     ):
         self._orders = deque[Order](maxlen=config.MAX_ORDER_HISTORY)
-        self._active_orders = deque[Order]
+        self._active_orders = deque[Order]()
         self._order_submit_client = order_submit_client
         self._storage_client = storage_client
         self._today_orders_count : int = 0
@@ -113,15 +113,15 @@ class RuntimeOrderContext(OrderContext):
     
     def cancel_with_symbol(self, symbol: str):
         for order in self._active_orders:
-            if order.order_intent.symbol ==  symbol:
-                self._order_submit_client.cancel_order(order_id=order.order_ref)
+            if order.order_intent.symbol == symbol:
+                self._order_submit_client.cancel_order(order_id=order.order_id)
 
     def get_all_active_orders(self) -> tuple[Order, ...]:
         return tuple(self._active_orders)
 
     def get_active_order_with_id(self, order_id) -> Order | None:
         return next(
-            (o for o in self._active_orders if o.order_ref == order_id),
+            (o for o in self._active_orders if o.order_id == order_id),
             None
         )
 
@@ -131,7 +131,9 @@ class RuntimeOrderContext(OrderContext):
         ])
     
     def get_recent_orders(self, count: int = 1) -> tuple[Order, ...]:
-        return tuple(self._orders[-count:])
+        if count <= 0:
+            return ()
+        return tuple(self._orders)[-count:]
     
     def get_today_order_count(self) -> int:
         return self._today_orders_count
@@ -154,13 +156,13 @@ class RuntimeOrderContext(OrderContext):
             # self._position_context.update_positions()
             
             target_order.status = status
-            target_order.update_at = datetime.now()
+            target_order.updated_at = datetime.now()
             if filled_quantity is not None:
                 target_order.filled_quantity = filled_quantity
             if average_fill_price is not None:
                 target_order.average_fill_price = average_fill_price
 
-        if not target_order.is_active():
+        if target_order is not None and not target_order.is_active:
             self.save_order_in_storage(target_order)
             self._active_orders.remove(target_order)
 

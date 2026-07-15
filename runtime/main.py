@@ -112,7 +112,8 @@ async def main():
             order_context = RuntimeOrderContext(
                 order_submit_client=grpc_client,
                 storage_client=storage_client,
-                config=config
+                config=config,
+                position_context=position_context,
             )
 
             indicator_context = RuntimeIndicatorContext(

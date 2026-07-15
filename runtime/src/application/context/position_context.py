@@ -8,15 +8,13 @@ from alphovex_sdk import(
     Symbol
 )
 
-from .data_context import RuntimeDataContext
-
 class RuntimePositionContext(PositionContext):
     def __init__(
         self,
-        data_context: RuntimeDataContext
-    ):
-        self._positions : list[Position] = []
-        self._data_context = data_context
+        positions: list[Position] | None = None,
+    ) -> None:
+        """Initialize the context from the deployment position snapshot."""
+        self._positions = list(positions or [])
     
     def get_all_positions(self) -> tuple[Position, ...]:
         return tuple(self._positions)
