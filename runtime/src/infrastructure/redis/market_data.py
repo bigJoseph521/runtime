@@ -516,8 +516,6 @@ class RedisMarketDataListener(MarketDataPort):
         if symbol not in self._symbols:
             return
         
-        print(f"------{channel}")
-        print(payload)
 
         if channel.startswith(self._quote_prefix):
             new_quote = from_raw_to_quote(payload)

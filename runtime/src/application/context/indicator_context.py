@@ -356,8 +356,6 @@ class RuntimeIndicatorContext(IndicatorContext):
             )
             return
         
-        print(bar)
-
         runtime_bar = Bar(
             ts=bar.ts.astype(datetime),
             open=float(bar.open),
