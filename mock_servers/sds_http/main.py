@@ -18,7 +18,7 @@ deployments: dict[str, dict[str, Any]] = {
         "mode": "paper",
         "deployment_id": DEPLOYMENT_ID,
         "entrypoint": "sma_crossover:SMACrossOver",
-        "artifact_uri": "./data/samples/sma_daily_summary/sma_crossover.zip",
+        "artifact_uri": "./data/samples/sma_crossover/sma_crossover.zip",
         "params": {
             "fast": 10,
             "slow": 30,
@@ -34,7 +34,7 @@ deployments: dict[str, dict[str, Any]] = {
         },
         "positions": [],
         # "orders": [],
-        "artifact_digest": "7515d10307e4dbf428d733dae7136435be43a6f42bc27c37456fd5b14541eaa4",
+        "artifact_digest": "c41b53e5102f1e598afd3e19aba65341b96fba1c18751162e51666513381cba6",
     }
 }
 
