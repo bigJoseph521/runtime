@@ -244,26 +244,43 @@ class RuntimeDataContext(DataContext):
         ...
     
     # TODO    
-    def get_latest_quote(self, symbol: str):
+    def get_latest_quote(self, symbol: str) -> Quote:
         self._validate_symbol(symbol)
-        return self._quotes[symbol]
+        try:
+            quote = self._quotes[symbol]
+        except KeyError as error:
+            raise LookupError(
+                f"No quote is available for {symbol}"
+            ) from error
 
-    def update_quote(self, symbol:str, quote: Quote):
-        self._validate_symbol(symbol)
-        self._quotes[symbol]=self.quote
-    
-    def get_best_bid(self, symbol: str) -> float:
-        self._validate_symbol(symbol)
-        return self._quotes[symbol].bid
+        return Quote(
+            ts=quote.ts.astype("datetime64[ms]").tolist(),
+            bid_price=float(quote.bid_price),
+            bid_size=float(quote.bid_size),
+            ask_price=float(quote.ask_price),
+            ask_size=float(quote.ask_size),
+        )
 
-    def get_best_ask(self, symbol) -> float:
+    def update_quote(self, symbol: str, quote: _QuoteRow) -> None:
         self._validate_symbol(symbol)
-        return self._quotes[symbol].ask
+        self._quotes[symbol] = quote
     
-    def get_spread(self, symbol) -> float:
+    def get_best_bid(self, symbol: str) -> float | None:
         self._validate_symbol(symbol)
-        temp_quote = self._quotes[symbol]
-        return temp_quote.bid - temp_quote.ask
+        quote = self._quotes.get(symbol)
+        return None if quote is None else float(quote.bid_price)
+
+    def get_best_ask(self, symbol) -> float | None:
+        self._validate_symbol(symbol)
+        quote = self._quotes.get(symbol)
+        return None if quote is None else float(quote.ask_price)
+    
+    def get_spread(self, symbol) -> float | None:
+        self._validate_symbol(symbol)
+        quote = self._quotes.get(symbol)
+        if quote is None:
+            return None
+        return float(quote.ask_price - quote.bid_price)
     
     def get_daily_summaries(
         self,
