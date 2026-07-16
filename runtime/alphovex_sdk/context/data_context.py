@@ -194,7 +194,6 @@ class DataContext(ABC):
         """
         ...
 
-
     @abstractmethod
     def is_new_bar(
         self,

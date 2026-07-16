@@ -70,7 +70,7 @@ class RuntimeDataContext(DataContext):
         self._bars : dict[tuple[str, str], BarRingBuffer] = {}
         self._ticks : dict[str, TickRingBuffer] = {}
         self._quotes: dict[str, _QuoteRow] = {}
-        self._bar_completed: dict[tuple[str, Timeframe], bool] = {}
+        self._is_new_bar: dict[tuple[str, Timeframe], bool] = {}
         self._warmup_seeded: set[tuple[str, Timeframe]] = set()
 
         self._storage_client = storage_client
@@ -123,14 +123,14 @@ class RuntimeDataContext(DataContext):
     # Runtime Functions
     #--------------------
 
-    def update_bars(self, symbol:str, tf: str, bar:_BarRow, completed: bool):
+    def update_bars(self, symbol:str, tf: str, bar:_BarRow, is_new: bool):
         buf = self._get_bar_buffer(symbol, tf)
 
         key = (symbol, tf)
 
-        self._bar_completed[key] = completed
+        self._is_new_bar[key] = is_new
 
-        if completed:
+        if is_new:
             buf.append(bar=bar)
         else:
             buf.update_current_bar(bar=bar)        
@@ -263,7 +263,9 @@ class RuntimeDataContext(DataContext):
         })       
 
     def is_new_bar(self, symbol, timeframe) -> bool:
-        ...
+        key = (symbol, timeframe)
+
+        return self._is_new_bar[key]
     
     # TODO    
     def get_latest_quote(self, symbol: str) -> Quote:

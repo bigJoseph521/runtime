@@ -49,7 +49,10 @@ class RuntimeConfig:
         
         self.risk_grpc_IP = os.getenv("SWR_RISK_GRPC_TARGET", "127.0.0.1:51051")
         
-        self.SDS_base_url = os.getenv("STRATEGY_DEPLOYMENT_SERVICE_BASE_URL", "http://127.0.0.1:5010")
+        self.SDS_base_url = os.getenv(
+            "STRATEGY_DEPLOYMENT_SERVICE_BASE_URL",
+            "http://127.0.0.1:5010"
+        )
         self.HDS_grpc_target = os.getenv(
             "HISTORICAL_DATA_GRPC_TARGET",
             "127.0.0.1:52051",
