@@ -171,11 +171,6 @@ async def main():
             )
 
             external_event_bus.subscribe(
-                event_type=ExternalEventType.TICK,
-                handler=strategy_class.on_tick()
-            )
-
-            external_event_bus.subscribe(
                 event_type=ExternalEventType.ORDER_UPDATE,
                 handler=order_context.update_order_status
             )
@@ -223,6 +218,11 @@ async def main():
             runtime_strategy = strategy_class()
             runtime_strategy._bind_context(strategy_context)
             runtime_strategy.initialize()
+
+            external_event_bus.subscribe(
+                event_type=ExternalEventType.TICK,
+                handler=runtime_strategy.on_tick()
+            )
 
             shutdown_event = asyncio.Event()
 
