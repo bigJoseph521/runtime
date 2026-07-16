@@ -110,7 +110,10 @@ async def main():
 
             position_context = RuntimePositionContext(deployment_info.positions)
 
-            grpc_client=GRPCOrderSubmitClient(config=config)
+            grpc_client=GRPCOrderSubmitClient(
+                config=config,
+                logger=logger
+            )
             order_context = RuntimeOrderContext(
                 order_submit_client=grpc_client,
                 storage_client=storage_client,

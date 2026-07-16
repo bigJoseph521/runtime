@@ -5,11 +5,17 @@ import grpc
 from alphovex_sdk import OrderIntent, OrderId
 
 from application.ports.order_submit_port import OrderSubmitPort
+from application.context.logging_context import RuntimeLoggingContext
 from infrastructure.config.config import RuntimeConfig 
 
 class GRPCOrderSubmitClient(OrderSubmitPort):
-    def __init__(self, config: RuntimeConfig) -> None:
+    def __init__(
+        self,
+        config: RuntimeConfig,
+        logger: RuntimeLoggingContext
+    ) -> None:
         self._risk_ip = config.risk_grpc_IP
+        self._logger = logger
 
     def send_order_intent(
         self,
@@ -30,15 +36,36 @@ class GRPCOrderSubmitClient(OrderSubmitPort):
         # )
         #
         # self._stub.SubmitOrderIntent(request)
-        ...
+        self._logger.platform_info(
+            message="Order submit requested",
+            order_intent= order_intent,
+            id= client_order_id
+        )
+        self._logger.info(
+            message="Order submit requested",
+            order_intent= order_intent,
+            id= client_order_id
+        )
 
     def cancel_order(
         self,
         order_id: OrderId,
     ) -> None:
-        ...
+        self._logger.platform_info(
+            message="Order cancel requested",
+            id= order_id
+        )
+        self._logger.info(
+            message="Order cancel requested",
+            id= order_id
+        )
 
     def cancel_all_orders(self) -> None:
-        ...
+        self._logger.platform_info(
+            message="All pending Order cancel requested"
+        )
+        self._logger.info(
+            message="All pending Order cancel requested"
+        )
 
         
