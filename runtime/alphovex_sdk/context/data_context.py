@@ -15,8 +15,8 @@ from ..typedefs.aliases import PriceValue, Symbol, Timeframe
 
 DEFAULT_BAR_LIMIT: Final[int] = 500
 MAX_BAR_LIMIT: Final[int] = 5000
-DEFAULT_TRADE_LIMIT: Final[int] = 500
-MAX_TRADE_LIMIT: Final[int] = 5000
+DEFAULT_TICK_LIMIT: Final[int] = 500
+MAX_TICK_LIMIT: Final[int] = 5000
 
 
 class DataContext(ABC):
@@ -24,7 +24,7 @@ class DataContext(ABC):
     Provide strategy code with normalized market and symbol data.
 
     The data context exposes historical and real-time market data, including
-    bars, trades, quotes, daily stock summary(OHLCV) and fundamentals.
+    bars, ticks, quotes, daily stock summary(OHLCV) and fundamentals.
 
     Data returned by this context uses SDK models and canonical SDK field
     names. Strategy code should not depend on broker-specific or
@@ -104,7 +104,7 @@ class DataContext(ABC):
         ...
 
     @abstractmethod
-    def get_latest_trades(
+    def get_latest_ticks(
         self,
         symbol: Symbol,
         *,
@@ -113,54 +113,54 @@ class DataContext(ABC):
         limit: int | None = None,
     ) -> tuple[Tick, ...]:
         """
-        Return recent executed trades for a symbol.
+        Return recent executed ticks for a symbol.
 
-        Trades are ordered from newest to oldest. ``start=0`` refers to the
-        newest available trade.
+        ticks are ordered from newest to oldest. ``start=0`` refers to the
+        newest available tick.
 
         Parameters
         ----------
         symbol
-            Trading symbol whose trades are requested.
+            Trading symbol whose ticks are requested.
         start
-            Zero-based offset from the newest available trade.
+            Zero-based offset from the newest available tick.
         count
-            Maximum number of trades to return.
+            Maximum number of ticks to return.
         limit
-            Optional upper bound on the number of trades that may be returned.
+            Optional upper bound on the number of ticks that may be returned.
             When omitted, the runtime applies its configured default limit.
 
         Returns
         -------
         tuple[Tick, ...]
-            Executed trades ordered from newest to oldest. Returns an empty
-            tuple when no matching trades are available.
+            Executed ticks ordered from newest to oldest. Returns an empty
+            tuple when no matching ticks are available.
 
         Raises
         ------
         ValueError
             Raised when ``start`` is negative, ``count`` is less than one, or
-            ``limit`` exceeds ``MAX_TRADE_LIMIT``.
+            ``limit`` exceeds ``MAX_TICK_LIMIT``.
         """
         ...
 
     @abstractmethod
-    def get_latest_trade(
+    def get_latest_tick(
         self,
         symbol: Symbol,
     ) -> Tick | None:
         """
-        Return the most recent executed trade for a symbol.
+        Return the most recent executed tick for a symbol.
 
         Parameters
         ----------
         symbol
-            Trading symbol whose latest trade is requested.
+            Trading symbol whose latest tick is requested.
 
         Returns
         -------
         Tick | None
-            Most recent executed trade, or ``None`` when no trade data is
+            Most recent executed tick, or ``None`` when no tick data is
             available.
         """
         ...
@@ -189,7 +189,7 @@ class DataContext(ABC):
 
         Notes
         -----
-        The returned bar may change as additional trades arrive before the
+        The returned bar may change as additional ticks arrive before the
         timeframe interval closes.
         """
         ...

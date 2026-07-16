@@ -73,7 +73,7 @@ class RuntimeConfig:
         
         self.md_redis_url = os.getenv("SWR_MARKET_DATA_REDIS_URL", "redis://127.0.0.1:6379/")
         self.md_redis_partition_count = os.getenv("MD_REDIS_PARTITION_COUNT", 128)
-        self.tick_pubsub_channel_prefix = os.getenv("TICK_CHANNEL_PREFIX", "md:realtime:trades:")
+        self.tick_pubsub_channel_prefix = os.getenv("TICK_CHANNEL_PREFIX", "md:realtime:ticks:")
         self.quote_pubsub_channel_prefix = os.getenv("QUOTE_CHANNEL_PREFIX", "md:realtime:quotes:")
 
         self.MAX_ORDER_HISTORY = os.getenv("MAX_ORDER_HISTORY", 100)

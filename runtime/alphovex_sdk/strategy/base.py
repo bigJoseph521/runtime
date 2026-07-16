@@ -308,7 +308,7 @@ class Strategy(ABC):
 
         This method is called by the platform when a new tick is delievered to the strategy.
 
-        A tick represents the lastest trade-level market event for a symbol. For most
+        A tick represents the lastest tick-level market event for a symbol. For most
         strategies, this method is the main place to implement price-driven trading logic,
         such as checking market conditions, reading indicator value, deciding whether to 
         buy or sell, and submitting orders.
@@ -336,7 +336,7 @@ class Strategy(ABC):
             SYMBOL = "AAPL"
 
             def on_tick(self) -> None:
-                tick = self.data.get_latest_trade(self.SYMBOL)
+                tick = self.data.get_latest_tick(self.SYMBOL)
                 if tick is None:
                     return
 

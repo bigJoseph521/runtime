@@ -10,9 +10,9 @@ import math
 from alphovex_sdk import(
     DataContext,
     MAX_BAR_LIMIT,
-    MAX_TRADE_LIMIT,
+    MAX_TICK_LIMIT,
     DEFAULT_BAR_LIMIT,
-    DEFAULT_TRADE_LIMIT,
+    DEFAULT_TICK_LIMIT,
     Bar,
     Tick,
     Quote,
@@ -65,7 +65,7 @@ class RuntimeDataContext(DataContext):
         hds_client: HistoricalDataClientPort
     ):
         self._bar_buffer_size = MAX_BAR_LIMIT
-        self._tick_buffer_size = MAX_TRADE_LIMIT
+        self._tick_buffer_size = MAX_TICK_LIMIT
 
         self._bars : dict[tuple[str, str], BarRingBuffer] = {}
         self._ticks : dict[str, TickRingBuffer] = {}
@@ -202,7 +202,7 @@ class RuntimeDataContext(DataContext):
             for i in range(ts.shape[0])
         )
 
-    def get_latest_trades(self, symbol, *, start, count, limit = None):
+    def get_latest_ticks(self, symbol, *, start, count, limit = None):
         self._validate_symbol(symbol)
         buf = self._get_tick_buffer(symbol)
 
@@ -247,7 +247,7 @@ class RuntimeDataContext(DataContext):
             "volume": float(buf.volume[i])
         })
 
-    def get_latest_trade(self, symbol: str) -> Tick:
+    def get_latest_tick(self, symbol: str) -> Tick:
         self._validate_symbol(symbol)
         buf = self._get_tick_buffer(symbol=symbol)
         
@@ -546,30 +546,30 @@ class RuntimeDataContext(DataContext):
 
         return limit
 
-    def _resolve_trade_limit(
+    def _resolve_tick_limit(
         self,
         limit: int | None,
     ) -> int:
         """
-        Resolve and validate the trades() limit.
+        Resolve and validate the ticks() limit.
 
         This helper is not part of the public strategy API.
         """
         if limit is None:
-            return DEFAULT_TRADE_LIMIT
+            return DEFAULT_TICK_LIMIT
 
         if limit <= 0:
             raise InvalidValueError(
-                message="trade limit must be greater than 0",
+                message="tick limit must be greater than 0",
                 details={"limit": limit},
             )
 
-        if limit > MAX_TRADE_LIMIT:
+        if limit > MAX_TICK_LIMIT:
             raise InvalidValueError(
-                message="trade limit exceeds the maximum allowed value",
+                message="tick limit exceeds the maximum allowed value",
                 details={
                     "limit": limit,
-                    "maximum": MAX_TRADE_LIMIT,
+                    "maximum": MAX_TICK_LIMIT,
                 },
             )
 
