@@ -38,12 +38,12 @@ class GRPCOrderSubmitClient(OrderSubmitPort):
         # self._stub.SubmitOrderIntent(request)
         self._logger.platform_info(
             message="Order submit requested",
-            order_intent= order_intent,
+            order_intent= self._from_order_intent_class_to_json(order_intent),
             id= client_order_id
         )
         self._logger.info(
             message="Order submit requested",
-            order_intent= order_intent,
+            order_intent= self._from_order_intent_class_to_json(order_intent),
             id= client_order_id
         )
 
@@ -67,5 +67,18 @@ class GRPCOrderSubmitClient(OrderSubmitPort):
         self._logger.info(
             message="All pending Order cancel requested"
         )
-
+    
+    def _from_order_intent_class_to_json(
+        self,
+        order_intent: OrderIntent
+    ) -> None:
+        return {
+            "symbol": order_intent.symbol,
+            "side": str(order_intent.side),
+            "quantity": order_intent.quantity,
+            "type": str(order_intent.order_type),
+            "limit_price": order_intent.limit_price,
+            "stop_price": order_intent.stop_price,
+            "time_in_force": str(order_intent.time_in_force) 
+        }
         
