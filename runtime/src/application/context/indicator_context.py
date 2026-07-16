@@ -151,6 +151,22 @@ class RuntimeIndicatorContext(IndicatorContext):
                 error=str(error),
                 task_name=task.get_name(),
             )
+            asyncio.create_task(
+                self._status_manager.transform(Status.FAILED)
+            )
+
+    @property
+    def all_ready(self) -> bool:
+        """Return whether every active indicator has completed warm-up.
+
+        An empty registration set is ready. This lets strategies that do not
+        use indicators receive ticks normally while creating a strategy-wide
+        readiness barrier as soon as any indicator is registered.
+        """
+        return all(
+            registered.warmup_finished
+            for registered in self._indicators.values()
+        )
 
     @property
     def registered_targets(self) -> list[tuple[str, Timeframe]]:
@@ -163,8 +179,9 @@ class RuntimeIndicatorContext(IndicatorContext):
     async def wait_for_pending_warmups(self) -> None:
         """Wait for registrations already issued by strategy initialization.
 
-        Registrations created later remain asynchronous and do not pause
-        existing ready indicators or realtime strategy callbacks.
+        Registrations created later remain asynchronous. The market-data
+        pipeline continues running, but strategy tick callbacks pause until
+        every active registration is ready.
         """
         initial_handles = tuple(self._indicators)
         await asyncio.sleep(0)

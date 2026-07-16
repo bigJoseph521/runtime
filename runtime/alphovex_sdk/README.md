@@ -116,6 +116,13 @@ A strategy inherits from `alphovex_sdk.Strategy` and may override these callback
 
 Do not create an infinite loop, call `sleep()`, implement a private scheduler, or manually manage market-data subscriptions inside a callback. The runtime owns the event loop.
 
+Indicators can be registered from any strategy callback, not only
+`on_init()`. A new registration is warmed immediately from historical bars.
+Realtime market-data ingestion continues during that work, but the runtime
+does not call `on_tick()` while any active indicator is still warming. Tick
+callbacks resume automatically after every registered indicator is ready, so
+strategy tick logic does not need to handle partially initialized values.
+
 ### Market events
 
 `on_event()` receives a `MarketEventType` enum value:

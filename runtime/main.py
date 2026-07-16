@@ -235,11 +235,16 @@ async def main():
             runtime_strategy.initialize()
 
             # Registrations made by on_init() form the startup barrier.
-            # Registrations made later warm asynchronously and return
-            # (None, False) until their first value is ready.
             await indicator_context.wait_for_pending_warmups()
 
             def dispatch_strategy_tick(_symbol, _tick) -> None:
+                # A registration can be created from any strategy callback.
+                # Keep ingesting market data while it warms from history, but
+                # never expose a partially initialized indicator environment
+                # to user tick logic.
+                if not indicator_context.all_ready:
+                    return
+
                 runtime_strategy.on_tick()
 
             # Subscribe the strategy last. Schema-3 messages publish the
