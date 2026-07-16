@@ -219,10 +219,10 @@ async def main():
             runtime_strategy._bind_context(strategy_context)
             runtime_strategy.initialize()
 
-            external_event_bus.subscribe(
-                event_type=ExternalEventType.TICK,
-                handler=runtime_strategy.on_tick()
-            )
+            # external_event_bus.subscribe(
+            #     event_type=ExternalEventType.TICK,
+            #     handler=runtime_strategy.on_tick()
+            # )
 
             shutdown_event = asyncio.Event()
 
