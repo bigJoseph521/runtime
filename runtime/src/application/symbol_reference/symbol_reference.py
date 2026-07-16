@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sqlite3
+import threading
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
@@ -97,6 +98,7 @@ class SymbolReferenceService:
         )
 
         self._logger = logger
+        self._lock = threading.RLock()
 
         self._connection = sqlite3.connect(
             (
@@ -105,7 +107,7 @@ class SymbolReferenceService:
                 "&immutable=1"
             ),
             uri=True,
-            check_same_thread=True,
+            check_same_thread=False,
         )
 
         self._connection.row_factory = sqlite3.Row
@@ -145,6 +147,10 @@ class SymbolReferenceService:
         The first registration queries SQLite. Repeated registrations
         of the same symbol return the cached result.
         """
+        with self._lock:
+            return self._register_locked(symbol)
+
+    def _register_locked(self, symbol: str) -> SymbolCheckResult:
         normalized_symbol = self._normalize_symbol(symbol)
 
         if normalized_symbol is None:
@@ -184,9 +190,10 @@ class SymbolReferenceService:
         if normalized_symbol is None:
             return None
 
-        return self._registered.get(
-            normalized_symbol
-        )
+        with self._lock:
+            return self._registered.get(
+                normalized_symbol
+            )
 
     def check(
         self,
@@ -206,7 +213,8 @@ class SymbolReferenceService:
         if normalized_symbol is None:
             return False
 
-        return normalized_symbol in self._registered
+        with self._lock:
+            return normalized_symbol in self._registered
 
     def is_tradable(
         self,
@@ -234,23 +242,26 @@ class SymbolReferenceService:
         if normalized_symbol is None:
             return False
 
-        return (
-            self._registered.pop(
-                normalized_symbol,
-                None,
+        with self._lock:
+            return (
+                self._registered.pop(
+                    normalized_symbol,
+                    None,
+                )
+                is not None
             )
-            is not None
-        )
 
     def clear(self) -> None:
         """
         Clear all worker-local symbol information.
         """
-        self._registered.clear()
+        with self._lock:
+            self._registered.clear()
 
     def close(self) -> None:
-        self._registered.clear()
-        self._connection.close()
+        with self._lock:
+            self._registered.clear()
+            self._connection.close()
 
     def __enter__(self) -> SymbolReferenceService:
         return self

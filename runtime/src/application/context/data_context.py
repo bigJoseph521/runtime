@@ -6,6 +6,8 @@ import asyncio
 from datetime import datetime, timedelta, timezone
 import numpy as np
 import math
+import threading
+from functools import wraps
 
 from alphovex_sdk import(
     DataContext,
@@ -40,6 +42,15 @@ from application.ports.historical_data import HistoricalDataClientPort
 from infrastructure.storage.client import StorageClient
 
 
+def _synchronized_market_data(method):
+    @wraps(method)
+    def wrapper(self, *args, **kwargs):
+        with self._data_lock:
+            return method(self, *args, **kwargs)
+
+    return wrapper
+
+
 class RuntimeDataContext(DataContext):
     """
     Single Source of Truth all all runtime trading data
@@ -66,6 +77,8 @@ class RuntimeDataContext(DataContext):
     ):
         self._bar_buffer_size = MAX_BAR_LIMIT
         self._tick_buffer_size = MAX_TICK_LIMIT
+        self._data_lock = threading.RLock()
+        self._event_loop = asyncio.get_running_loop()
 
         self._bars : dict[tuple[str, str], BarRingBuffer] = {}
         self._ticks : dict[str, TickRingBuffer] = {}
@@ -83,6 +96,17 @@ class RuntimeDataContext(DataContext):
         self._symbol_reference_service = symbol_reference_service
         self._status_manager = status_manager
         self._hds_client = hds_client
+
+    def _submit_coroutine(self, coroutine) -> None:
+        try:
+            running_loop = asyncio.get_running_loop()
+        except RuntimeError:
+            running_loop = None
+
+        if running_loop is self._event_loop:
+            self._event_loop.create_task(coroutine)
+        else:
+            asyncio.run_coroutine_threadsafe(coroutine, self._event_loop)
 
     #--------------------
     # Internal Helpers
@@ -127,6 +151,7 @@ class RuntimeDataContext(DataContext):
     # Runtime Functions
     #--------------------
 
+    @_synchronized_market_data
     def update_bars(self, symbol:str, tf: str, bar:_BarRow, is_new: bool):
         buf = self._get_bar_buffer(symbol, tf)
 
@@ -139,6 +164,7 @@ class RuntimeDataContext(DataContext):
         else:
             buf.update_current_bar(bar=bar)        
 
+    @_synchronized_market_data
     def update_warmup_bar(
         self,
         symbol: str,
@@ -158,8 +184,10 @@ class RuntimeDataContext(DataContext):
         timeframe: Timeframe,
         _: int,
     ) -> None:
-        self._warmup_seeded.add((symbol, timeframe))
+        with self._data_lock:
+            self._warmup_seeded.add((symbol, timeframe))
 
+    @_synchronized_market_data
     def update_ticks(self, symbol: str, tick:_TickRow):
         buf = self._get_tick_buffer(symbol)
 
@@ -171,6 +199,7 @@ class RuntimeDataContext(DataContext):
     #--------------------------
 
     @property
+    @_synchronized_market_data
     def symbol_subscriptions(self) -> dict[str, dict[str, Any]]:
         return {
             symbol: {
@@ -182,9 +211,11 @@ class RuntimeDataContext(DataContext):
         }
 
     @property
+    @_synchronized_market_data
     def index_subscriptions(self) -> frozenset[str]:
         return frozenset(self._index_subscriptions)
 
+    @_synchronized_market_data
     def subscribe_symbol(
         self,
         symbol: str,
@@ -212,18 +243,22 @@ class RuntimeDataContext(DataContext):
             "bar_timeframes": normalized_timeframes,
         }
 
+    @_synchronized_market_data
     def subscribe_index(self, index: str) -> None:
         normalized_index = str(index).strip().upper()
         if not normalized_index:
             raise InvalidValueError(message="Index is required")
         self._index_subscriptions.add(normalized_index)
 
+    @_synchronized_market_data
     def update_index_bar(self, index: str, bar: _BarRow) -> None:
         self._index_bars[index] = bar
 
+    @_synchronized_market_data
     def update_index_value(self, index: str, value: float) -> None:
         self._index_values[index] = value
 
+    @_synchronized_market_data
     def get_latest_index(self, index: str) -> tuple[Bar | None, float | None]:
         normalized_index = str(index).strip().upper()
         if normalized_index not in self._index_subscriptions:
@@ -239,6 +274,7 @@ class RuntimeDataContext(DataContext):
         )
         return bar, self._index_values.get(normalized_index)
     
+    @_synchronized_market_data
     def get_latest_bars(self, symbol, timeframe, *, start, count, limit = None):
         self._validate_symbol(symbol)
         buf = self._get_bar_buffer(symbol=symbol, tf=timeframe)
@@ -275,6 +311,7 @@ class RuntimeDataContext(DataContext):
             for i in range(ts.shape[0])
         )
 
+    @_synchronized_market_data
     def get_latest_ticks(self, symbol, *, start, count, limit = None):
         self._validate_symbol(symbol)
         buf = self._get_tick_buffer(symbol)
@@ -302,6 +339,7 @@ class RuntimeDataContext(DataContext):
             for i in range(count)
         )
 
+    @_synchronized_market_data
     def get_current_bar(self, symbol:str, tf:str) -> Bar:
         self._validate_symbol(symbol)
         buf = self._get_bar_buffer(symbol,tf)
@@ -320,6 +358,7 @@ class RuntimeDataContext(DataContext):
             "volume": float(buf.volume[i])
         })
 
+    @_synchronized_market_data
     def get_latest_tick(self, symbol: str) -> Tick:
         self._validate_symbol(symbol)
         buf = self._get_tick_buffer(symbol=symbol)
@@ -335,12 +374,14 @@ class RuntimeDataContext(DataContext):
             "volume": buf.volume[i]
         })       
 
+    @_synchronized_market_data
     def is_new_bar(self, symbol, timeframe) -> bool:
         key = (symbol, timeframe)
 
         return self._is_new_bar[key]
     
     # TODO    
+    @_synchronized_market_data
     def get_latest_quote(self, symbol: str) -> Quote:
         self._validate_symbol(symbol)
         try:
@@ -358,20 +399,24 @@ class RuntimeDataContext(DataContext):
             ask_size=float(quote.ask_size),
         )
 
+    @_synchronized_market_data
     def update_quote(self, symbol: str, quote: _QuoteRow) -> None:
         self._validate_symbol(symbol)
         self._quotes[symbol] = quote
     
+    @_synchronized_market_data
     def get_best_bid(self, symbol: str) -> float | None:
         self._validate_symbol(symbol)
         quote = self._quotes.get(symbol)
         return None if quote is None else float(quote.bid_price)
 
+    @_synchronized_market_data
     def get_best_ask(self, symbol) -> float | None:
         self._validate_symbol(symbol)
         quote = self._quotes.get(symbol)
         return None if quote is None else float(quote.ask_price)
     
+    @_synchronized_market_data
     def get_spread(self, symbol) -> float | None:
         self._validate_symbol(symbol)
         quote = self._quotes.get(symbol)
@@ -527,7 +572,7 @@ class RuntimeDataContext(DataContext):
                 message=f"{symbol} is not available",
                 reason=str(check_result.reason)
             )
-            asyncio.create_task(
+            self._submit_coroutine(
                 self._status_manager.transform(Status.FAILED)
             )
             

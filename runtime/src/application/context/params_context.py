@@ -26,6 +26,19 @@ class RuntimeParamsContext(ParamsContext):
         self._logger = logger
         self._params : dict[str, Any] = self._set_params_from_yaml()
         self._status_manager = status_manager
+        self._event_loop = asyncio.get_running_loop()
+
+    def _report_failed(self) -> None:
+        coroutine = self._status_manager.transform(new_status=Status.FAILED)
+        try:
+            running_loop = asyncio.get_running_loop()
+        except RuntimeError:
+            running_loop = None
+
+        if running_loop is self._event_loop:
+            self._event_loop.create_task(coroutine)
+        else:
+            asyncio.run_coroutine_threadsafe(coroutine, self._event_loop)
 
     def _set_params_from_yaml(self) -> dict[str, Any] | None :
         if not Path(self._yaml_path).exists():
@@ -61,9 +74,7 @@ class RuntimeParamsContext(ParamsContext):
                 message="Invalid param detected",
                 invalid_params=list(paramDict.keys() - self._params.keys())
             )
-            asyncio.create_task(
-                self._status_manager.transform(new_status=Status.FAILED)
-            )
+            self._report_failed()
     
     def get_params(self, *keys) -> tuple[Any, ...]:
         missing = [k for k in keys if k not in self._params]
@@ -72,9 +83,7 @@ class RuntimeParamsContext(ParamsContext):
                 message="Not defined Params",
                 invalid_params=missing
             )
-            asyncio.create_task(
-                self._status_manager.transform(new_status=Status.FAILED)
-            )
+            self._report_failed()
             raise KeyError(f"Missing parameters: {missing}")
 
         return tuple(self._params[k] for k in keys)

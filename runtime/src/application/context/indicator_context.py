@@ -6,6 +6,8 @@ from dataclasses import dataclass
 import uuid
 import asyncio
 import time
+import threading
+from functools import wraps
 from datetime import datetime
 
 from alphovex_sdk import (
@@ -24,6 +26,15 @@ from application.context.logging_context import RuntimeLoggingContext
 from application.event_handling.internal_event_bus import InternalEventBus, InternalEventType
 from application.symbol_reference.symbol_reference import SymbolReferenceService
 from contracts.rows import _BarRow
+
+
+def _synchronized(method):
+    @wraps(method)
+    def wrapper(self, *args, **kwargs):
+        with self._lock:
+            return method(self, *args, **kwargs)
+
+    return wrapper
 
 @dataclass(frozen=True)
 class IndicatorHandle:
@@ -62,6 +73,8 @@ class RuntimeIndicatorContext(IndicatorContext):
         self._status_manager = status_manager
         self._logger = logger
         self._symbol_reference_service = symbol_reference_service
+        self._event_loop = asyncio.get_running_loop()
+        self._lock = threading.RLock()
         self._pending_warmup_windows: dict[
             tuple[str, Timeframe], int
         ] = {}
@@ -70,6 +83,7 @@ class RuntimeIndicatorContext(IndicatorContext):
             tuple[str, Timeframe], asyncio.Task[None]
         ] = {}
         
+    @_synchronized
     def register(
         self,
         indicator: Indicator, 
@@ -90,7 +104,7 @@ class RuntimeIndicatorContext(IndicatorContext):
                 message=f"{symbol} is not available",
                 reason=str(check_result.reason)
             )
-            asyncio.create_task(
+            self._submit_coroutine(
                 self._status_manager.transform(Status.FAILED)
             )
 
@@ -111,20 +125,40 @@ class RuntimeIndicatorContext(IndicatorContext):
             False,
             deque(maxlen=indicator.required_history)
         )
-        self._indicators[handle] = record
         target = (symbol, timeframe)
 
-        self._pending_warmup_windows[target] = max(
-            indicator.required_history,
-            self._pending_warmup_windows.get(target, 0),
+        with self._lock:
+            self._indicators[handle] = record
+            self._pending_warmup_windows[target] = max(
+                indicator.required_history,
+                self._pending_warmup_windows.get(target, 0),
+            )
+
+        self._event_loop.call_soon_threadsafe(
+            self._ensure_warmup_task,
+            target,
         )
 
-        existing_task = self._warmup_request_tasks.get(target)
+        return handle
 
+    def _submit_coroutine(self, coroutine) -> None:
+        try:
+            running_loop = asyncio.get_running_loop()
+        except RuntimeError:
+            running_loop = None
+
+        if running_loop is self._event_loop:
+            self._event_loop.create_task(coroutine)
+        else:
+            asyncio.run_coroutine_threadsafe(coroutine, self._event_loop)
+
+    def _ensure_warmup_task(
+        self,
+        target: tuple[str, Timeframe],
+    ) -> None:
+        existing_task = self._warmup_request_tasks.get(target)
         if existing_task is None or existing_task.done():
             self._start_warmup_task(target)
-
-        return handle
 
     def _start_warmup_task(
         self,
@@ -136,6 +170,15 @@ class RuntimeIndicatorContext(IndicatorContext):
         )
         task.add_done_callback(self._observe_warmup_task)
         self._warmup_request_tasks[target] = task
+
+    def _cancel_pending_warmup(
+        self,
+        target: tuple[str, Timeframe],
+    ) -> None:
+        self._pending_warmup_windows.pop(target, None)
+        task = self._warmup_request_tasks.pop(target, None)
+        if task is not None and not task.done():
+            self._event_loop.call_soon_threadsafe(task.cancel)
 
     def _observe_warmup_task(
         self,
@@ -151,7 +194,7 @@ class RuntimeIndicatorContext(IndicatorContext):
                 error=str(error),
                 task_name=task.get_name(),
             )
-            asyncio.create_task(
+            self._submit_coroutine(
                 self._status_manager.transform(Status.FAILED)
             )
 
@@ -163,18 +206,20 @@ class RuntimeIndicatorContext(IndicatorContext):
         use indicators receive ticks normally while creating a strategy-wide
         readiness barrier as soon as any indicator is registered.
         """
-        return all(
-            registered.warmup_finished
-            for registered in self._indicators.values()
-        )
+        with self._lock:
+            return all(
+                registered.warmup_finished
+                for registered in self._indicators.values()
+            )
 
     @property
     def registered_targets(self) -> list[tuple[str, Timeframe]]:
         """Return the unique symbol/timeframe targets currently in use."""
-        return list({
-            (registered.symbol, registered.timeframe)
-            for registered in self._indicators.values()
-        })
+        with self._lock:
+            return list({
+                (registered.symbol, registered.timeframe)
+                for registered in self._indicators.values()
+            })
 
     async def wait_for_pending_warmups(self) -> None:
         """Wait for registrations already issued by strategy initialization.
@@ -238,6 +283,7 @@ class RuntimeIndicatorContext(IndicatorContext):
 
             if target in self._pending_warmup_windows:
                 self._start_warmup_task(target)
+    @_synchronized
     def get_value(
         self,
         handle
@@ -252,7 +298,7 @@ class RuntimeIndicatorContext(IndicatorContext):
                 message="Indicator not registered",
                 source="user"
             )
-            asyncio.create_task(
+            self._submit_coroutine(
                 self._status_manager.transform(new_status=Status.FAILED)
             )
 
@@ -267,6 +313,7 @@ class RuntimeIndicatorContext(IndicatorContext):
 
         return registered.value_history[0], registered.recently_updated
         
+    @_synchronized
     def get_values(
         self,
         handle: IndicatorHandle,
@@ -351,6 +398,7 @@ class RuntimeIndicatorContext(IndicatorContext):
 
         return values[start : start + count]
 
+    @_synchronized
     def unregister(self, handle: IndicatorHandle) -> bool:
         if not handle in self._indicators:
             self._logger.warning(
@@ -377,7 +425,7 @@ class RuntimeIndicatorContext(IndicatorContext):
             self._symbol_reference_service.unregister(symbol)
             self._cancel_pending_warmup((symbol, timeframe))
 
-            asyncio.create_task(
+            self._submit_coroutine(
                 self._internal_event_bus.publish(
                     event={
                         "type": InternalEventType.INDICATOR_UNREGISTERED,
@@ -389,6 +437,7 @@ class RuntimeIndicatorContext(IndicatorContext):
                 )
             )
 
+    @_synchronized
     def unregister_all(self) -> None:
         """
         Unregister all indicators matching optional filter.
@@ -409,7 +458,7 @@ class RuntimeIndicatorContext(IndicatorContext):
 
         self._pending_warmup_windows.clear()
 
-        asyncio.create_task(
+        self._submit_coroutine(
             self._internal_event_bus.publish(
                 event={
                     "type": InternalEventType.INDICATOR_ALL_UNREGISTERED,
@@ -418,6 +467,7 @@ class RuntimeIndicatorContext(IndicatorContext):
             )
         )
 
+    @_synchronized
     def update_indicator(
         self,
         symbol: str,
@@ -499,6 +549,7 @@ class RuntimeIndicatorContext(IndicatorContext):
                 indicator_count=updated_count,
             )
 
+    @_synchronized
     def update_warmup_indicator(
         self,
         symbol: str,
@@ -542,27 +593,28 @@ class RuntimeIndicatorContext(IndicatorContext):
         _: int,
     ) -> None:
         """Commit warm-up readiness for the requested target."""
-        matching = [
-            registered
-            for registered in self._indicators.values()
-            if (
-                (registered.symbol, registered.timeframe)
-                == (symbol, timeframe)
-                and not registered.warmup_finished
-            )
-        ]
+        with self._lock:
+            matching = [
+                registered
+                for registered in self._indicators.values()
+                if (
+                    (registered.symbol, registered.timeframe)
+                    == (symbol, timeframe)
+                    and not registered.warmup_finished
+                )
+            ]
 
-        for registered in matching:
-            registered.warmup_replayed = True
-            registered.warmup_finished = bool(
-                registered.value_history
-            )
-            registered.recently_updated = False
+            for registered in matching:
+                registered.warmup_replayed = True
+                registered.warmup_finished = bool(
+                    registered.value_history
+                )
+                registered.recently_updated = False
 
-        not_ready = [
-            registered for registered in matching
-            if not registered.warmup_finished
-        ]
+            not_ready = [
+                registered for registered in matching
+                if not registered.warmup_finished
+            ]
         if not_ready:
             raise RuntimeError(
                 "Insufficient historical bars to warm indicators for "

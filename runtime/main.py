@@ -23,6 +23,7 @@ from src.application.status_managing.status_model import Status
 from src.application.event_handling.internal_event_bus import InternalEventBus
 from src.application.event_handling.external_event_bus import ExternalEventBus
 from src.application.event_handling.events_model import InternalEventType, ExternalEventType
+from src.application.event_handling.tick_dispatcher import TickDispatcher
 from src.application.warm_up.warmup_service import WarmUpService
 from src.application.symbol_reference.symbol_reference import SymbolReferenceService
 
@@ -258,22 +259,18 @@ async def main():
             # Registrations made by on_init() form the startup barrier.
             await indicator_context.wait_for_pending_warmups()
 
-            def dispatch_strategy_tick(_symbol, _tick) -> None:
-                # A registration can be created from any strategy callback.
-                # Keep ingesting market data while it warms from history, but
-                # never expose a partially initialized indicator environment
-                # to user tick logic.
-                if not indicator_context.all_ready:
-                    return
-
-                runtime_strategy.on_tick()
+            tick_dispatcher = TickDispatcher(
+                strategy=runtime_strategy,
+                indicator_context=indicator_context,
+                logger=logger,
+            )
 
             # Subscribe the strategy last. Schema-3 messages publish the
             # current bar before the tick, so data and indicators are already
             # synchronized when user code runs.
             external_event_bus.subscribe(
                 event_type=ExternalEventType.TICK,
-                handler=dispatch_strategy_tick,
+                handler=tick_dispatcher.dispatch,
             )
 
             await market_data_listener.set_channels(
@@ -324,6 +321,7 @@ async def main():
                     new_status=Status.STOPPING,
                 )
 
+                await tick_dispatcher.close()
                 await market_data_listener.stop()
                 await hds_client.close()
 
