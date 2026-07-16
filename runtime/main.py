@@ -35,7 +35,7 @@ from src.infrastructure.grpc.historical_data_client import (
 from src.infrastructure.storage.client import StorageClient
 from src.infrastructure.strategy_loader.local_loader import LocalStrategyLoader
 from src.infrastructure.nats.nats_client import NATSMarketDataClient
-from src.infrastructure.grpc.client import GRPCClient
+from src.infrastructure.grpc.client import GRPCOrderSubmitClient
 
 async def main():
     args = arg_parse()
@@ -110,7 +110,7 @@ async def main():
 
             position_context = RuntimePositionContext(deployment_info.positions)
 
-            grpc_client=GRPCClient(config=config)
+            grpc_client=GRPCOrderSubmitClient(config=config)
             order_context = RuntimeOrderContext(
                 order_submit_client=grpc_client,
                 storage_client=storage_client,
