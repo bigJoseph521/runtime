@@ -20,6 +20,7 @@ from infrastructure.nats.helpers import (
     from_raw_1m_bar_to_bar,
     from_raw_1m_bar_to_tick,
     from_raw_custom_bar_to_bar,
+    from_raw_index_value,
     from_raw_quote_to_quote,
 )
 
@@ -45,6 +46,8 @@ class NATSMarketDataClient(MarketDataPort):
         self._http = httpx.AsyncClient(timeout=config.http_timeout, trust_env=False)
         self._subscriptions: dict[str, Subscription] = {}
         self._targets: set[tuple[Symbol, Timeframe]] = set()
+        self._symbol_subscriptions: dict[str, dict[str, Any]] = {}
+        self._indices: set[str] = set()
         self._leases: dict[tuple[Symbol, Timeframe], str] = {}
         self._lock = asyncio.Lock()
         self._started = False
@@ -77,6 +80,20 @@ class NATSMarketDataClient(MarketDataPort):
         for symbol, timeframe in targets:
             if timeframe != "1m":
                 subjects.add(f"{self._subject_prefix}.{symbol}.bar.{timeframe}")
+
+        for symbol, subscription in self._symbol_subscriptions.items():
+            bar_timeframes = subscription["bar_timeframes"]
+            if subscription["ticks"] or "1m" in bar_timeframes:
+                subjects.add(f"{self._subject_prefix}.{symbol}.bar")
+            if subscription["quotes"]:
+                subjects.add(f"{self._subject_prefix}.{symbol}.quote")
+            for timeframe in bar_timeframes:
+                if timeframe != "1m":
+                    subjects.add(f"{self._subject_prefix}.{symbol}.bar.{timeframe}")
+
+        for index in self._indices:
+            subjects.add(f"{self._subject_prefix}.index.{index}.value")
+            subjects.add(f"{self._subject_prefix}.index.{index}.bar")
         return subjects
 
     async def start(self) -> None:
@@ -132,6 +149,32 @@ class NATSMarketDataClient(MarketDataPort):
         normalized = {self._normalize(symbol, timeframe) for symbol, timeframe in ref}
         async with self._lock:
             await self._apply_targets_locked(normalized)
+
+    async def set_symbol_subscriptions(
+        self,
+        subscriptions: dict[str, dict[str, Any]],
+    ) -> None:
+        normalized: dict[str, dict[str, Any]] = {}
+        for symbol, subscription in subscriptions.items():
+            normalized_symbol = str(symbol).strip().upper()
+            normalized[normalized_symbol] = {
+                "ticks": bool(subscription["ticks"]),
+                "quotes": bool(subscription["quotes"]),
+                "bar_timeframes": tuple(subscription["bar_timeframes"]),
+            }
+        async with self._lock:
+            self._symbol_subscriptions = normalized
+            if self._started and self._client.is_connected:
+                await self._sync_subscriptions_locked()
+
+    async def set_indices(self, indices: set[str] | frozenset[str]) -> None:
+        normalized = {str(index).strip().upper() for index in indices}
+        if "" in normalized:
+            raise ValueError("index is required")
+        async with self._lock:
+            self._indices = normalized
+            if self._started and self._client.is_connected:
+                await self._sync_subscriptions_locked()
 
     async def add_channel(self, symbol: Symbol, timeframe: Timeframe, _: Any = None) -> None:
         target = self._normalize(symbol, timeframe)
@@ -275,14 +318,21 @@ class NATSMarketDataClient(MarketDataPort):
                 if len(payload) < 10:
                     raise ValueError("invalid custom-bar payload")
                 symbol, bar = from_raw_custom_bar_to_bar(payload)
-                timeframe = message.subject.rsplit(".", 1)[-1]
-                self._event_bus.publish({
-                    "type": ExternalEventType.CURRENT_BAR,
-                    "symbol": symbol,
-                    "timeframe": timeframe,
-                    "payload": bar,
-                    "completed": False,
-                })
+                if message.subject.startswith(f"{self._subject_prefix}.index."):
+                    self._event_bus.publish({
+                        "type": ExternalEventType.INDEX_BAR,
+                        "index": symbol,
+                        "payload": bar,
+                    })
+                else:
+                    timeframe = message.subject.rsplit(".", 1)[-1]
+                    self._event_bus.publish({
+                        "type": ExternalEventType.CURRENT_BAR,
+                        "symbol": symbol,
+                        "timeframe": timeframe,
+                        "payload": bar,
+                        "completed": False,
+                    })
             elif schema == 2:
                 if len(payload) < 7:
                     raise ValueError("invalid quote payload")
@@ -308,6 +358,17 @@ class NATSMarketDataClient(MarketDataPort):
                     "type": ExternalEventType.TICK,
                     "symbol": symbol,
                     "payload": tick,
+                })
+            elif schema == 4:
+                if len(payload) != 4:
+                    raise ValueError("invalid index-value payload")
+                index, value = from_raw_index_value(payload)
+                if str(payload[2]).strip().lower() != "1m":
+                    raise ValueError("index-value timeframe must be 1m")
+                self._event_bus.publish({
+                    "type": ExternalEventType.INDEX_VALUE,
+                    "index": index,
+                    "payload": value,
                 })
         except Exception as exc:
             self._logger.platform_error(

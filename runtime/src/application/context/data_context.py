@@ -70,6 +70,10 @@ class RuntimeDataContext(DataContext):
         self._bars : dict[tuple[str, str], BarRingBuffer] = {}
         self._ticks : dict[str, TickRingBuffer] = {}
         self._quotes: dict[str, _QuoteRow] = {}
+        self._index_bars: dict[str, _BarRow] = {}
+        self._index_values: dict[str, float] = {}
+        self._symbol_subscriptions: dict[str, dict[str, Any]] = {}
+        self._index_subscriptions: set[str] = set()
         self._is_new_bar: dict[tuple[str, Timeframe], bool] = {}
         self._warmup_seeded: set[tuple[str, Timeframe]] = set()
 
@@ -165,6 +169,75 @@ class RuntimeDataContext(DataContext):
     #--------------------------
     # SDK Functions
     #--------------------------
+
+    @property
+    def symbol_subscriptions(self) -> dict[str, dict[str, Any]]:
+        return {
+            symbol: {
+                "ticks": subscription["ticks"],
+                "quotes": subscription["quotes"],
+                "bar_timeframes": tuple(subscription["bar_timeframes"]),
+            }
+            for symbol, subscription in self._symbol_subscriptions.items()
+        }
+
+    @property
+    def index_subscriptions(self) -> frozenset[str]:
+        return frozenset(self._index_subscriptions)
+
+    def subscribe_symbol(
+        self,
+        symbol: str,
+        *,
+        ticks: bool = True,
+        quotes: bool = True,
+        bar_timeframes: tuple[str, ...] = ("1m",),
+    ) -> None:
+        self._validate_symbol(symbol)
+        normalized_symbol = symbol.strip().upper()
+        supported = {"1m", "5m", "15m", "30m", "1h", "4h", "1d"}
+        normalized_timeframes = tuple(
+            dict.fromkeys(str(timeframe).strip().lower() for timeframe in bar_timeframes)
+        )
+        unsupported = set(normalized_timeframes) - supported
+        if unsupported:
+            raise InvalidValueError(
+                message=f"Unsupported bar timeframe(s): {sorted(unsupported)}"
+            )
+        if not ticks and not quotes and not normalized_timeframes:
+            raise InvalidValueError(message="At least one symbol data type is required")
+        self._symbol_subscriptions[normalized_symbol] = {
+            "ticks": bool(ticks),
+            "quotes": bool(quotes),
+            "bar_timeframes": normalized_timeframes,
+        }
+
+    def subscribe_index(self, index: str) -> None:
+        normalized_index = str(index).strip().upper()
+        if not normalized_index:
+            raise InvalidValueError(message="Index is required")
+        self._index_subscriptions.add(normalized_index)
+
+    def update_index_bar(self, index: str, bar: _BarRow) -> None:
+        self._index_bars[index] = bar
+
+    def update_index_value(self, index: str, value: float) -> None:
+        self._index_values[index] = value
+
+    def get_latest_index(self, index: str) -> tuple[Bar | None, float | None]:
+        normalized_index = str(index).strip().upper()
+        if normalized_index not in self._index_subscriptions:
+            raise LookupError(f"Index {normalized_index} was not subscribed in on_init()")
+        row = self._index_bars.get(normalized_index)
+        bar = None if row is None else Bar(
+            open=float(row.open),
+            high=float(row.high),
+            low=float(row.low),
+            close=float(row.close),
+            volume=float(row.volume),
+            ts=row.ts.astype("datetime64[ms]").tolist(),
+        )
+        return bar, self._index_values.get(normalized_index)
     
     def get_latest_bars(self, symbol, timeframe, *, start, count, limit = None):
         self._validate_symbol(symbol)

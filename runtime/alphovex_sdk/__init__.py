@@ -15,12 +15,12 @@ from .context import (
     TimeContext,
     IndicatorUpdateMode,
     MAX_BAR_LIMIT,
-    MAX_TRADE_LIMIT,
-    DEFAULT_TRADE_LIMIT,
+    MAX_TICK_LIMIT,
+    DEFAULT_TICK_LIMIT,
     DEFAULT_BAR_LIMIT,
     MAX_INDICATOR_HISTORY_SIZE,
     MIN_INDICATOR_HISTORY_SIZE,
-    DEFAULT_INDICATOR_HISTORY_SIZE
+    DEFAULT_INDICATOR_HISTORY_SIZE,
 )
 
 from .models import (
@@ -185,12 +185,12 @@ __all__ = [
     "TimeContext",
     "IndicatorUpdateMode",
     "MAX_BAR_LIMIT",
-    "MAX_TRADE_LIMIT",
-    "DEFAULT_TRADE_LIMIT",
+    "MAX_TICK_LIMIT",
+    "DEFAULT_TICK_LIMIT",
     "DEFAULT_BAR_LIMIT",
     "MAX_INDICATOR_HISTORY_SIZE",
     "MIN_INDICATOR_HISTORY_SIZE",
-    "DEFAULT_INDICATOR_HISTORY_SIZE"    
+    "DEFAULT_INDICATOR_HISTORY_SIZE",    
 
     # Market data models
     "Bar",

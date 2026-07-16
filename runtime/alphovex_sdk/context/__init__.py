@@ -2,9 +2,9 @@ from .account_context import AccountContext
 from .data_context import (
     DataContext,
     MAX_BAR_LIMIT,
-    MAX_TRADE_LIMIT,
+    MAX_TICK_LIMIT,
     DEFAULT_BAR_LIMIT,
-    DEFAULT_TRADE_LIMIT
+    DEFAULT_TICK_LIMIT
 )
 from .indicator_context import (
     IndicatorContext,
@@ -34,9 +34,9 @@ __all__ = [
     "StorageContext",
     "IndicatorUpdateMode",
     "MAX_BAR_LIMIT",
-    "MAX_TRADE_LIMIT",
+    "MAX_TICK_LIMIT",
     "DEFAULT_BAR_LIMIT",
-    "DEFAULT_TRADE_LIMIT",
+    "DEFAULT_TICK_LIMIT",
     "MAX_INDICATOR_HISTORY_SIZE",
     "MIN_INDICATOR_HISTORY_SIZE",
     "DEFAULT_INDICATOR_HISTORY_SIZE"

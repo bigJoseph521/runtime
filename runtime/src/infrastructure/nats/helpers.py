@@ -41,6 +41,9 @@ def from_raw_custom_bar_to_bar(raw_bar : list) -> tuple[Symbol, _BarRow]:
     )    
     return raw_bar[1], new_bar
 
+def from_raw_index_value(raw_value: list) -> tuple[Symbol, float]:
+    return str(raw_value[1]).strip().upper(), float(raw_value[3])
+
 
 def  from_raw_quote_to_quote(raw_quote: list) -> tuple[Symbol, _QuoteRow]:
     new_quote = _QuoteRow(

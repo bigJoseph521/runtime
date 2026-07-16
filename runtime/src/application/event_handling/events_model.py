@@ -17,3 +17,5 @@ class ExternalEventType(StrEnum):
     ORDER_UPDATE = "order_update"
     SIGTERM = "sigterm"
     WARMUP_BAR = "warmup_bar"
+    INDEX_BAR = "index_bar"
+    INDEX_VALUE = "index_value"

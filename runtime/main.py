@@ -178,6 +178,15 @@ async def main():
             )
 
             external_event_bus.subscribe(
+                event_type=ExternalEventType.INDEX_BAR,
+                handler=data_context.update_index_bar,
+            )
+            external_event_bus.subscribe(
+                event_type=ExternalEventType.INDEX_VALUE,
+                handler=data_context.update_index_value,
+            )
+
+            external_event_bus.subscribe(
                 event_type=ExternalEventType.ORDER_UPDATE,
                 handler=order_context.update_order_status
             )
@@ -236,6 +245,15 @@ async def main():
             runtime_strategy = strategy_class()
             runtime_strategy._bind_context(strategy_context)
             runtime_strategy.initialize()
+
+            # on_init() only declares requirements. Apply explicit symbol and
+            # index subscriptions after user initialization has returned.
+            await market_data_listener.set_symbol_subscriptions(
+                data_context.symbol_subscriptions
+            )
+            await market_data_listener.set_indices(
+                data_context.index_subscriptions
+            )
 
             # Registrations made by on_init() form the startup barrier.
             await indicator_context.wait_for_pending_warmups()

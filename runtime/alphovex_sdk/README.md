@@ -337,8 +337,8 @@ Pass `"ALL"` for either `fields` or `symbols` to request all available values.
 | --- | ---: |
 | `DEFAULT_BAR_LIMIT` | `500` |
 | `MAX_BAR_LIMIT` | `5000` |
-| `DEFAULT_TRADE_LIMIT` | `500` |
-| `MAX_TRADE_LIMIT` | `5000` |
+| `DEFAULT_TICK_LIMIT` | `500` |
+| `MAX_TICK_LIMIT` | `5000` |
 
 ## Indicators
 

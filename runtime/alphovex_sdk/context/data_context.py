@@ -46,6 +46,142 @@ class DataContext(ABC):
     """
 
     @abstractmethod
+    def subscribe_symbol(
+        self,
+        symbol: Symbol,
+        *,
+        ticks: bool = True,
+        quotes: bool = True,
+        bar_timeframes: tuple[Timeframe, ...] = ("1m",),
+    ) -> None:
+        """
+        Subscribe the strategy to current market data for a symbol.
+
+        Call this method from ``on_init()``. After ``on_init()`` finishes, the
+        runtime starts the required market-data subscriptions and keeps the
+        latest requested bars, ticks, and quotes available to the strategy.
+
+        Parameters
+        ----------
+        symbol
+            Trading symbol to subscribe to, such as ``"AAPL"``.
+        ticks
+            Whether to receive tick updates for the symbol. Defaults to
+            ``True``.
+        quotes
+            Whether to receive quote updates for the symbol. Defaults to
+            ``True``.
+        bar_timeframes
+            Bar timeframes to receive. Defaults to ``("1m",)``. When a
+            supported timeframe above 1m is requested, the runtime arranges
+            the corresponding current-bar stream.
+
+        Returns
+        -------
+        None
+            The method records the subscription request. Market data becomes
+            available after the runtime applies the request.
+
+        Notes
+        -----
+        Read subscribed data with ``get_latest_bars()``,
+        ``get_latest_ticks()``, and ``get_latest_quote()``. Calling this
+        method does not wait for the first market-data update.
+
+        Examples
+        --------
+        ```python
+        def on_init(self) -> None:
+            self.data.subscribe_symbol(
+                symbol="AAPL",
+                ticks=True,
+                quotes=True,
+                bar_timeframes=("1m", "5m"),
+            )
+        ```
+        """
+        ...
+
+    @abstractmethod
+    def subscribe_index(self, index: Symbol) -> None:
+        """
+        Subscribe the strategy to current data for an index.
+
+        Call this method from ``on_init()``. After ``on_init()`` finishes, the
+        runtime subscribes to the index's current 1m aggregate and latest
+        value, then keeps both available to the strategy.
+
+        Parameters
+        ----------
+        index
+            Index symbol to subscribe to, such as ``"I:SPX"``.
+
+        Returns
+        -------
+        None
+            The method records the subscription request. Index data becomes
+            available after the runtime applies the request.
+
+        Notes
+        -----
+        An index subscription provides only the current 1m aggregate and one
+        latest index value. To use a higher timeframe such as 5m, combine
+        successive 1m aggregates in the strategy.
+
+        Examples
+        --------
+        ```python
+        def on_init(self) -> None:
+            self.data.subscribe_index("I:SPX")
+        ```
+        """
+        ...
+
+    @abstractmethod
+    def get_latest_index(
+        self,
+        index: Symbol,
+    ) -> tuple[Bar | None, PriceValue | None]:
+        """
+        Return the current 1m aggregate and latest value for an index.
+
+        This method reads the most recent index data already received by the
+        runtime. It does not create a subscription or wait for a new update.
+
+        Parameters
+        ----------
+        index
+            Previously subscribed index symbol, such as ``"I:SPX"``.
+
+        Returns
+        -------
+        tuple[Bar | None, PriceValue | None]
+            A pair containing ``(current_1m_aggregate, latest_value)``. Either
+            item is ``None`` until the runtime receives that part of the index
+            data.
+
+        Raises
+        ------
+        LookupError
+            Raised when the index was not subscribed with
+            ``subscribe_index()`` in ``on_init()``.
+
+        Examples
+        --------
+        ```python
+        def on_tick(self) -> None:
+            spx_bar, spx_value = self.data.get_latest_index("I:SPX")
+
+            if spx_bar is None or spx_value is None:
+                return
+
+            if spx_value > spx_bar.open:
+                self.logging.info("The index is above its current 1m open")
+        ```
+        """
+        ...
+
+    @abstractmethod
     def get_latest_bars(
         self,
         symbol: Symbol,

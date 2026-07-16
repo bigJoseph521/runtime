@@ -35,6 +35,12 @@ class ExternalEventBus:
                     event["payload"],
                     event.get("completed", False),
                 )
+        elif event_type == ExternalEventType.INDEX_BAR:
+            for handler in self._consumers[event_type]:
+                handler(event["index"], event["payload"])
+        elif event_type == ExternalEventType.INDEX_VALUE:
+            for handler in self._consumers[event_type]:
+                handler(event["index"], event["payload"])
         elif event_type == ExternalEventType.WARMUP_BAR:
             for handler in self._consumers[event_type]:
                 handler(
