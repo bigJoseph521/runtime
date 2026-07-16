@@ -2,8 +2,7 @@ from alphovex_sdk import (
     Strategy,
     SMA,
     IndicatorUpdateMode,
-    OrderType,
-    Tick
+    OrderType
 )
 class SMACrossOver(Strategy):
     def on_init(self):
@@ -18,13 +17,16 @@ class SMACrossOver(Strategy):
         self._slow_sma_handle = self.indicator.register(
             indicator = SMA(self._slow_period),
             symbol = "AAPL",
-            timeframe="1m",
+            timeframe="5m",
             update_mode=IndicatorUpdateMode.TICK
         )
     
-    def on_tick(self, tick: Tick):
-        fast_sma = self.indicator.get_value(self._fast_sma_handle)
-        slow_sma = self.indicator.get_value(self._slow_sma_handle)
+    def on_tick(self):
+        fast_sma, _ = self.indicator.get_value(self._fast_sma_handle)
+        slow_sma, _ = self.indicator.get_value(self._slow_sma_handle)
+
+        if fast_sma is None or slow_sma is None:
+            return
 
         if fast_sma > slow_sma:
             self.buy(

@@ -17,7 +17,6 @@ from ..context import (
 )
 
 from ..models import (
-    Tick,
     MarketEvent
 )
 from ..errors.strategy import (
@@ -330,35 +329,29 @@ class Strategy(ABC):
         - updating strategy-owned storage
 
 
-        Parameters
-        ----------
-        tick: Tick
-            The latest tick delivered to the strategy.
-
-            The tick includes following information:
-            - 'symbol'    : The symbol related to the tick
-            - 'price'     : The lastest traded price
-            - 'size'      : The traded quantity or volume
-            - 'timestamp' : The time when the tick occured    
-
-            
         Example
         -------
         ```python
         class MyStrategy(Strategy):
+            SYMBOL = "AAPL"
+
             def on_tick(self) -> None:
+                tick = self.data.get_latest_trade(self.SYMBOL)
+                if tick is None:
+                    return
+
                 if not self.data.is_new_bar(
-                    symbol=tick.symbol,
+                    symbol=self.SYMBOL,
                     timeframe=Timeframe.M1,
                 ):
                     return
                 bar = self.data.get_latest_bars(
-                    symbol=tick.symbol,
+                    symbol=self.SYMBOL,
                     timeframe=Timeframe.M1,
                 )[0]
 
-                bid = self.data.best_bid(tick.symbol)
-                ask = self.data.best_ask(tick.symbol)
+                bid = self.data.best_bid(self.SYMBOL)
+                ask = self.data.best_ask(self.SYMBOL)
                 
                 if bid is None or ask is None:
                     return
@@ -372,12 +365,12 @@ class Strategy(ABC):
 
                 if sma is not None and bar.close > sma:
                     self.buy(
-                        symbol =  tick. symbol,
+                        symbol = self.SYMBOL,
                         quantity = 10
                     )
 
                     self.storage.set(
-                        key=f"last_signal/{tick.symbol}",
+                        key=f"last_signal/{self.SYMBOL}",
                         value="BUY"
                     )
         ```

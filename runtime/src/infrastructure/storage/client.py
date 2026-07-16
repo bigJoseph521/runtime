@@ -31,6 +31,7 @@ class StorageClient:
             f.write(record + "\n")
 
     def get_daily_stock_summary(self, date: str) -> Any: 
+        print(date)       
         path = Path(f"{self._market_data_path}/daily_stock_summary/{date}.parquet")
 
         try:

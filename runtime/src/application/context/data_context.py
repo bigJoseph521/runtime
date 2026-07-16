@@ -71,6 +71,7 @@ class RuntimeDataContext(DataContext):
         self._ticks : dict[str, TickRingBuffer] = {}
         self._quotes: dict[str, _QuoteRow] = {}
         self._bar_completed: dict[tuple[str, Timeframe], bool] = {}
+        self._warmup_seeded: set[tuple[str, Timeframe]] = set()
 
         self._storage_client = storage_client
         self._logger = logger
@@ -133,6 +134,27 @@ class RuntimeDataContext(DataContext):
             buf.append(bar=bar)
         else:
             buf.update_current_bar(bar=bar)        
+
+    def update_warmup_bar(
+        self,
+        symbol: str,
+        timeframe: Timeframe,
+        bar: _BarRow,
+        completed: bool,
+    ) -> None:
+        """Seed a target once; later dynamic registrations do not duplicate it."""
+        target = (symbol, timeframe)
+        if target in self._warmup_seeded:
+            return
+        self.update_bars(symbol, timeframe, bar, completed)
+
+    async def complete_warmup_seed(
+        self,
+        symbol: str,
+        timeframe: Timeframe,
+        _: int,
+    ) -> None:
+        self._warmup_seeded.add((symbol, timeframe))
 
     def update_ticks(self, symbol: str, tick:_TickRow):
         buf = self._get_tick_buffer(symbol)

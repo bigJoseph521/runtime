@@ -169,6 +169,10 @@ async def main():
                 event_type=ExternalEventType.CURRENT_BAR,
                 handler=data_context.update_bars
             )
+            external_event_bus.subscribe(
+                event_type=ExternalEventType.CURRENT_BAR,
+                handler=indicator_context.update_indicator,
+            )
 
             external_event_bus.subscribe(
                 event_type=ExternalEventType.ORDER_UPDATE,
@@ -177,11 +181,11 @@ async def main():
 
             external_event_bus.subscribe(
                 event_type=ExternalEventType.WARMUP_BAR,
-                handler=data_context.update_bars
+                handler=data_context.update_warmup_bar
             )
             external_event_bus.subscribe(
                 event_type=ExternalEventType.WARMUP_BAR,
-                handler=indicator_context.update_indicator
+                handler=indicator_context.update_warmup_indicator
             )
 
             market_data_listener = NATSMarketDataClient(
@@ -189,6 +193,9 @@ async def main():
                 config=config,
                 logger=logger
             )
+            # Connect without targets. Warmed targets are subscribed later;
+            # user strategy callbacks are not installed until the startup
+            # warm-up barrier has completed.
             await market_data_listener.start()
 
             warm_up_service = WarmUpService(
@@ -205,6 +212,14 @@ async def main():
 
             internal_event_bus.subscribe(
                 event_type=InternalEventType.WARMUP_FINISHED,
+                handler=data_context.complete_warmup_seed,
+            )
+            internal_event_bus.subscribe(
+                event_type=InternalEventType.WARMUP_FINISHED,
+                handler=indicator_context.complete_warmup,
+            )
+            internal_event_bus.subscribe(
+                event_type=InternalEventType.WARMUP_FINISHED,
                 handler=market_data_listener.add_channel
             )        
             internal_event_bus.subscribe(
@@ -219,10 +234,25 @@ async def main():
             runtime_strategy._bind_context(strategy_context)
             runtime_strategy.initialize()
 
-            # external_event_bus.subscribe(
-            #     event_type=ExternalEventType.TICK,
-            #     handler=runtime_strategy.on_tick()
-            # )
+            # Registrations made by on_init() form the startup barrier.
+            # Registrations made later warm asynchronously and return
+            # (None, False) until their first value is ready.
+            await indicator_context.wait_for_pending_warmups()
+
+            def dispatch_strategy_tick(_symbol, _tick) -> None:
+                runtime_strategy.on_tick()
+
+            # Subscribe the strategy last. Schema-3 messages publish the
+            # current bar before the tick, so data and indicators are already
+            # synchronized when user code runs.
+            external_event_bus.subscribe(
+                event_type=ExternalEventType.TICK,
+                handler=dispatch_strategy_tick,
+            )
+
+            await market_data_listener.set_channels(
+                indicator_context.registered_targets
+            )
 
             shutdown_event = asyncio.Event()
 

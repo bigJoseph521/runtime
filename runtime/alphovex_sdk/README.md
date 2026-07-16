@@ -37,7 +37,6 @@ from alphovex_sdk import (
     OrderType,
     SMA,
     Strategy,
-    Tick,
 )
 
 
@@ -63,7 +62,7 @@ class MovingAverageStrategy(Strategy):
             period=period,
         )
 
-    def on_tick(self, tick: Tick) -> None:
+    def on_tick(self) -> None:
         if not self.data.is_new_bar(
             symbol=self.SYMBOL,
             timeframe=self.TIMEFRAME,
@@ -110,7 +109,7 @@ A strategy inherits from `alphovex_sdk.Strategy` and may override these callback
 | Callback | Purpose |
 | --- | --- |
 | `on_init()` | One-time setup, parameter reads, indicator registration, and timer configuration. |
-| `on_tick(tick)` | Main trade-tick-driven strategy logic. Market data and indicators are synchronized before the callback. |
+| `on_tick()` | Main trade-tick-driven strategy logic. Market data and indicators are synchronized before the callback; read the latest tick through `self.data`. |
 | `on_portfolio_update()` | React after the runtime updates account, position, and active-order state. |
 | `on_timer()` | Run scheduled logic at the interval configured with `self.time.set_timer(...)`. |
 | `on_event(event)` | React to a `MarketEventType`, such as market open, close, halt, or resume. |

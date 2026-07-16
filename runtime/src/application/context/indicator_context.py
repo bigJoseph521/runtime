@@ -39,6 +39,7 @@ class _RegisteredIndicator:
     update_mode: IndicatorUpdateMode
     value_history: deque[Any]
     warmup_finished: bool
+    warmup_replayed: bool
     recently_updated: bool
     bars: deque[Bar]
 
@@ -107,6 +108,7 @@ class RuntimeIndicatorContext(IndicatorContext):
             deque(maxlen=history_size), 
             False,
             False,
+            False,
             deque(maxlen=indicator.required_history)
         )
         self._indicators[handle] = record
@@ -120,11 +122,78 @@ class RuntimeIndicatorContext(IndicatorContext):
         existing_task = self._warmup_request_tasks.get(target)
 
         if existing_task is None or existing_task.done():
-            self._warmup_request_tasks[target] = asyncio.create_task(
-                self._publish_coalesced_warmup_request(target)
-            )
+            self._start_warmup_task(target)
 
         return handle
+
+    def _start_warmup_task(
+        self,
+        target: tuple[str, Timeframe],
+    ) -> None:
+        task = asyncio.create_task(
+            self._publish_coalesced_warmup_request(target),
+            name=f"indicator-warmup:{target[0]}:{target[1]}",
+        )
+        task.add_done_callback(self._observe_warmup_task)
+        self._warmup_request_tasks[target] = task
+
+    def _observe_warmup_task(
+        self,
+        task: asyncio.Task[None],
+    ) -> None:
+        """Retrieve background failures so asyncio never reports orphan tasks."""
+        if task.cancelled():
+            return
+        error = task.exception()
+        if error is not None:
+            self._logger.platform_error(
+                message="Indicator warm-up task failed",
+                error=str(error),
+                task_name=task.get_name(),
+            )
+
+    @property
+    def registered_targets(self) -> list[tuple[str, Timeframe]]:
+        """Return the unique symbol/timeframe targets currently in use."""
+        return list({
+            (registered.symbol, registered.timeframe)
+            for registered in self._indicators.values()
+        })
+
+    async def wait_for_pending_warmups(self) -> None:
+        """Wait for registrations already issued by strategy initialization.
+
+        Registrations created later remain asynchronous and do not pause
+        existing ready indicators or realtime strategy callbacks.
+        """
+        initial_handles = tuple(self._indicators)
+        await asyncio.sleep(0)
+
+        while self._warmup_request_tasks:
+            tasks = tuple(self._warmup_request_tasks.values())
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            for result in results:
+                if isinstance(result, BaseException):
+                    raise RuntimeError(
+                        "Indicator warm-up failed during strategy startup"
+                    ) from result
+            await asyncio.sleep(0)
+
+        not_ready = [
+            self._indicators[handle]
+            for handle in initial_handles
+            if handle in self._indicators
+            and not self._indicators[handle].warmup_finished
+        ]
+        if not_ready:
+            targets = sorted({
+                f"{item.symbol}:{item.timeframe}"
+                for item in not_ready
+            })
+            raise RuntimeError(
+                "Indicator warm-up produced no value for: "
+                + ", ".join(targets)
+            )
     
     async def _publish_coalesced_warmup_request(
         self,
@@ -151,9 +220,7 @@ class RuntimeIndicatorContext(IndicatorContext):
             self._warmup_request_tasks.pop(target, None)
 
             if target in self._pending_warmup_windows:
-                self._warmup_request_tasks[target] = asyncio.create_task(
-                    self._publish_coalesced_warmup_request(target)
-                )
+                self._start_warmup_task(target)
     def get_value(
         self,
         handle
@@ -177,7 +244,10 @@ class RuntimeIndicatorContext(IndicatorContext):
             raise ValueError(
                 "Indicator not registered"
             )
-        
+
+        if not registered.value_history:
+            return None, False
+
         return registered.value_history[0], registered.recently_updated
         
     def get_values(
@@ -342,7 +412,13 @@ class RuntimeIndicatorContext(IndicatorContext):
         matching_indicators = []
         for registered in self._indicators.values():
             registered.recently_updated = False
-            if (registered.symbol, registered.timeframe) == (symbol, timeframe):
+            if (
+                (registered.symbol, registered.timeframe) == (symbol, timeframe)
+                and (
+                    registered.warmup_finished
+                    or registered.warmup_replayed
+                )
+            ):
                 matching_indicators.append(registered)
 
         if not matching_indicators:
@@ -356,8 +432,6 @@ class RuntimeIndicatorContext(IndicatorContext):
             )
             return
         
-        print(bar)
-
         runtime_bar = Bar(
             ts=bar.ts.astype(datetime),
             open=float(bar.open),
@@ -395,7 +469,7 @@ class RuntimeIndicatorContext(IndicatorContext):
             if value is not None:
                 registered.warmup_finished = True
                 registered.recently_updated = True
-                registered.value_history.append(
+                registered.value_history.appendleft(
                     value,
                 )
             
@@ -406,4 +480,74 @@ class RuntimeIndicatorContext(IndicatorContext):
                 window= registered.indicator.required_history,
                 value=value,
                 indicator_count=updated_count,
+            )
+
+    def update_warmup_indicator(
+        self,
+        symbol: str,
+        timeframe: str,
+        bar: _BarRow,
+        completed: bool,
+    ) -> None:
+        """Replay history only into indicators that are still warming."""
+        if bar is None:
+            return
+
+        runtime_bar = Bar(
+            ts=bar.ts.astype(datetime),
+            open=float(bar.open),
+            high=float(bar.high),
+            low=float(bar.low),
+            close=float(bar.close),
+            volume=float(bar.volume),
+        )
+
+        for registered in self._indicators.values():
+            if (
+                (registered.symbol, registered.timeframe)
+                != (symbol, timeframe)
+                or registered.warmup_finished
+            ):
+                continue
+
+            registered.bars.appendleft(runtime_bar)
+            value = registered.indicator.calculate(
+                list(registered.bars),
+                is_new_bar=completed,
+            )
+            if value is not None:
+                registered.value_history.appendleft(value)
+
+    async def complete_warmup(
+        self,
+        symbol: str,
+        timeframe: Timeframe,
+        _: int,
+    ) -> None:
+        """Commit warm-up readiness for the requested target."""
+        matching = [
+            registered
+            for registered in self._indicators.values()
+            if (
+                (registered.symbol, registered.timeframe)
+                == (symbol, timeframe)
+                and not registered.warmup_finished
+            )
+        ]
+
+        for registered in matching:
+            registered.warmup_replayed = True
+            registered.warmup_finished = bool(
+                registered.value_history
+            )
+            registered.recently_updated = False
+
+        not_ready = [
+            registered for registered in matching
+            if not registered.warmup_finished
+        ]
+        if not_ready:
+            raise RuntimeError(
+                "Insufficient historical bars to warm indicators for "
+                f"{symbol}:{timeframe}"
             )
