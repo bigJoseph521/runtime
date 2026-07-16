@@ -153,7 +153,6 @@ class OrderIntent:
     symbol: Symbol
     side: OrderSide
     quantity: QuantityValue
-    price: PriceValue
     order_type: OrderType
     limit_price: PriceValue | None = None
     stop_price: PriceValue | None = None
@@ -172,7 +171,6 @@ class OrderIntent:
             f"OrderIntent(symbol={self.symbol!r}, "
             f"side={self.side!r}, "
             f"quantity={self.quantity!r}, "
-            f"price={self.price!r}, "
             f"order_type={self.order_type!r}, "
             f"limit_price={self.limit_price!r}, "
             f"stop_price={self.stop_price!r}, "
@@ -197,11 +195,6 @@ class OrderIntent:
 
         if self.quantity is None:
             raise ValueError("Quantity is required")
-
-        if self.price is None:
-            raise ValueError("Price is required")
-        if self.price <= 0:
-            raise ValueError("Price must be greater than 0")
 
         if self.order_type is None:
             raise ValueError("Order type is required")
