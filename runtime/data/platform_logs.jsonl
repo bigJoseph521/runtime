@@ -1,0 +1,39 @@
+{"ts": "2026-07-17 07:22:03.374571", "level": "INFO", "message": "Deployment info fetched successfully", "response": "{\"mode\":\"paper\",\"deployment_id\":\"25831484-fe6c-4af5-ae9b-7f35a8067363\",\"entrypoint\":\"sma_crossover:SMACrossOver\",\"artifact_uri\":\"./data/samples/sma_5m/sma_crossover.zip\",\"params\":{\"fast\":10,\"slow\":30},\"account\":{\"cash_balance\":12000,\"buying_power\":12000,\"equity\":12000,\"initial_margin\":0,\"maintenance_margin\":0,\"available_funds\":12000,\"broker\":\"Alpaca\"},\"positions\":[],\"artifact_digest\":\"258afb2bf33f1deb7e20076e63fe157b2e3ebf4e770926969babab672aaec194\"}"}
+{"ts": "2026-07-17 07:22:05.317559", "level": "INFO", "message": "Strategy File succuessfully installed"}
+{"ts": "2026-07-17 07:22:05.318088", "level": "INFO", "message": "Params updated based on deployment info"}
+{"ts": "2026-07-17 07:22:05.318131", "level": "INFO", "message": "Status updated", "old_status": "INITIALIZING", "new_status": "STARTING"}
+{"ts": "2026-07-17 07:22:05.320855", "level": "INFO", "message": "Status Updates reported", "status": "STARTING"}
+{"ts": "2026-07-17 07:22:05.362067", "level": "INFO", "message": "Connected to NATS server: nats://127.0.0.1:4222"}
+{"ts": "2026-07-17 07:22:05.369084", "level": "INFO", "message": "warm up data is being replayed", "remain_num": 29, "symbol": "AAPL", "timeframe": "5m", "window": 30}
+{"ts": "2026-07-17 07:22:05.369256", "level": "INFO", "message": "warm up data is being replayed", "remain_num": 28, "symbol": "AAPL", "timeframe": "5m", "window": 30}
+{"ts": "2026-07-17 07:22:05.369302", "level": "INFO", "message": "warm up data is being replayed", "remain_num": 27, "symbol": "AAPL", "timeframe": "5m", "window": 30}
+{"ts": "2026-07-17 07:22:05.369331", "level": "INFO", "message": "warm up data is being replayed", "remain_num": 26, "symbol": "AAPL", "timeframe": "5m", "window": 30}
+{"ts": "2026-07-17 07:22:05.369351", "level": "INFO", "message": "warm up data is being replayed", "remain_num": 25, "symbol": "AAPL", "timeframe": "5m", "window": 30}
+{"ts": "2026-07-17 07:22:05.369369", "level": "INFO", "message": "warm up data is being replayed", "remain_num": 24, "symbol": "AAPL", "timeframe": "5m", "window": 30}
+{"ts": "2026-07-17 07:22:05.369387", "level": "INFO", "message": "warm up data is being replayed", "remain_num": 23, "symbol": "AAPL", "timeframe": "5m", "window": 30}
+{"ts": "2026-07-17 07:22:05.369402", "level": "INFO", "message": "warm up data is being replayed", "remain_num": 22, "symbol": "AAPL", "timeframe": "5m", "window": 30}
+{"ts": "2026-07-17 07:22:05.369416", "level": "INFO", "message": "warm up data is being replayed", "remain_num": 21, "symbol": "AAPL", "timeframe": "5m", "window": 30}
+{"ts": "2026-07-17 07:22:05.369430", "level": "INFO", "message": "warm up data is being replayed", "remain_num": 20, "symbol": "AAPL", "timeframe": "5m", "window": 30}
+{"ts": "2026-07-17 07:22:05.369445", "level": "INFO", "message": "warm up data is being replayed", "remain_num": 19, "symbol": "AAPL", "timeframe": "5m", "window": 30}
+{"ts": "2026-07-17 07:22:05.369459", "level": "INFO", "message": "warm up data is being replayed", "remain_num": 18, "symbol": "AAPL", "timeframe": "5m", "window": 30}
+{"ts": "2026-07-17 07:22:05.369474", "level": "INFO", "message": "warm up data is being replayed", "remain_num": 17, "symbol": "AAPL", "timeframe": "5m", "window": 30}
+{"ts": "2026-07-17 07:22:05.369488", "level": "INFO", "message": "warm up data is being replayed", "remain_num": 16, "symbol": "AAPL", "timeframe": "5m", "window": 30}
+{"ts": "2026-07-17 07:22:05.369502", "level": "INFO", "message": "warm up data is being replayed", "remain_num": 15, "symbol": "AAPL", "timeframe": "5m", "window": 30}
+{"ts": "2026-07-17 07:22:05.369515", "level": "INFO", "message": "warm up data is being replayed", "remain_num": 14, "symbol": "AAPL", "timeframe": "5m", "window": 30}
+{"ts": "2026-07-17 07:22:05.369528", "level": "INFO", "message": "warm up data is being replayed", "remain_num": 13, "symbol": "AAPL", "timeframe": "5m", "window": 30}
+{"ts": "2026-07-17 07:22:05.369541", "level": "INFO", "message": "warm up data is being replayed", "remain_num": 12, "symbol": "AAPL", "timeframe": "5m", "window": 30}
+{"ts": "2026-07-17 07:22:05.369561", "level": "INFO", "message": "warm up data is being replayed", "remain_num": 11, "symbol": "AAPL", "timeframe": "5m", "window": 30}
+{"ts": "2026-07-17 07:22:05.369575", "level": "INFO", "message": "warm up data is being replayed", "remain_num": 10, "symbol": "AAPL", "timeframe": "5m", "window": 30}
+{"ts": "2026-07-17 07:22:05.369589", "level": "INFO", "message": "warm up data is being replayed", "remain_num": 9, "symbol": "AAPL", "timeframe": "5m", "window": 30}
+{"ts": "2026-07-17 07:22:05.369603", "level": "INFO", "message": "warm up data is being replayed", "remain_num": 8, "symbol": "AAPL", "timeframe": "5m", "window": 30}
+{"ts": "2026-07-17 07:22:05.369619", "level": "INFO", "message": "warm up data is being replayed", "remain_num": 7, "symbol": "AAPL", "timeframe": "5m", "window": 30}
+{"ts": "2026-07-17 07:22:05.369633", "level": "INFO", "message": "warm up data is being replayed", "remain_num": 6, "symbol": "AAPL", "timeframe": "5m", "window": 30}
+{"ts": "2026-07-17 07:22:05.369645", "level": "INFO", "message": "warm up data is being replayed", "remain_num": 5, "symbol": "AAPL", "timeframe": "5m", "window": 30}
+{"ts": "2026-07-17 07:22:05.369659", "level": "INFO", "message": "warm up data is being replayed", "remain_num": 4, "symbol": "AAPL", "timeframe": "5m", "window": 30}
+{"ts": "2026-07-17 07:22:05.369671", "level": "INFO", "message": "warm up data is being replayed", "remain_num": 3, "symbol": "AAPL", "timeframe": "5m", "window": 30}
+{"ts": "2026-07-17 07:22:05.369685", "level": "INFO", "message": "warm up data is being replayed", "remain_num": 2, "symbol": "AAPL", "timeframe": "5m", "window": 30}
+{"ts": "2026-07-17 07:22:05.369699", "level": "INFO", "message": "warm up data is being replayed", "remain_num": 1, "symbol": "AAPL", "timeframe": "5m", "window": 30}
+{"ts": "2026-07-17 07:22:05.369713", "level": "INFO", "message": "warm up data is being replayed", "remain_num": 0, "symbol": "AAPL", "timeframe": "5m", "window": 30}
+{"ts": "2026-07-17 07:22:05.371283", "level": "ERROR", "message": "Indicator warm-up task failed", "error": "Client error '412 Precondition Failed' for url 'http://127.0.0.1:50120/v1/timeframes/acquire'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/412", "task_name": "indicator-warmup:AAPL:5m"}
+{"ts": "2026-07-17 07:22:05.371335", "level": "INFO", "message": "Status updated", "old_status": "STARTING", "new_status": "FAILED"}
+{"ts": "2026-07-17 07:22:05.372509", "level": "INFO", "message": "Status Updates reported", "status": "FAILED"}
