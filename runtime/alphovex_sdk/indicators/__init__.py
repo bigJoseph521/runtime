@@ -27,6 +27,7 @@ from .examples.Gator import Gator
 from .examples.HeikenAshi import HeikenAshi
 from .examples.MACD import MACD
 from .examples.SMA import SMA
+from .examples.RSI import RSI
 
 __all__ = [
     "Indicator",
@@ -56,4 +57,5 @@ __all__ = [
     "HeikenAshi",
     "MACD",
     "SMA",
+    "RSI",
 ]

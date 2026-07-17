@@ -86,6 +86,7 @@ from .indicators import (
     HeikenAshi,
     MACD,
     SMA,
+    RSI,
 )
 
 from .errors import (
@@ -260,6 +261,7 @@ __all__ = [
     "HeikenAshi",
     "MACD",
     "SMA",
+    "RSI",
 
     # Base SDK errors
     "SDKError",
