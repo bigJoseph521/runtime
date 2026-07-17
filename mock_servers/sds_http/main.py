@@ -34,7 +34,7 @@ deployments: dict[str, dict[str, Any]] = {
         },
         "positions": [],
         # "orders": [],
-        "artifact_digest": "584da22fe2071e727882918fdf270b05ae5d0215744d5134e796c076d2c2ed10",
+        "artifact_digest": "b7b2a976dffef351bc2b8b422fd288ac8136090fc7a32faf523ca857d0c163e9",
     }
 }
 
