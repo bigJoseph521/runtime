@@ -6,6 +6,7 @@ from alphovex_sdk import (
 )
 class SMACrossOver(Strategy):
     def on_init(self):
+        self._holding = False
         self._fast_period = self.params.get("fast")
         self._slow_period = self.params.get("slow")
         self._fast_sma_handle = self.indicator.register(
@@ -28,15 +29,17 @@ class SMACrossOver(Strategy):
         if fast_sma is None or slow_sma is None:
             return
 
-        if fast_sma > slow_sma:
+        if fast_sma > slow_sma and self._holding is False:
             self.buy(
                 symbol="AAPL",
                 quantity=1.0,
                 order_type= OrderType.MARKET
             )
-        else:
+            self._holding = True
+        elif fast_sma < slow_sma and self._holding is True:
             self.sell(
                 symbol="AAPL",
                 quantity=1.0,
                 order_type= OrderType.MARKET
             )
+            self._holding = False
