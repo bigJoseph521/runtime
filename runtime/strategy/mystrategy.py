@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Final
+from typing import Final, cast
 
 from alphovex_sdk import (
     ADX,
@@ -92,18 +92,32 @@ class AAPLTrendStrategy(Strategy):
 
         # The runtime normally suppresses on_tick until registered indicators
         # are ready. Keep this guard for additional strategy-level safety.
-        if any(
-            value is None
-            for value in (
-                ema_15m_20,
-                ema_15m_50,
-                adx_5m_result,
-                macd_5m_result,
-                ema_1m_20,
-                rsi_1m,
-            )
-        ):
+        if ema_15m_20 is None:
             return
+        if ema_15m_50 is None:
+            return
+        if adx_5m_result is None:
+            return
+        if macd_5m_result is None:
+            return
+        if ema_1m_20 is None:
+            return
+        if rsi_1m is None:
+            return
+
+        ema_15m_20_value = float(ema_15m_20)
+        ema_15m_50_value = float(ema_15m_50)
+        ema_1m_20_value = float(ema_1m_20)
+        rsi_1m_value = float(rsi_1m)
+
+        adx_values = cast(
+            tuple[float, float, float],
+            adx_5m_result,
+        )
+        macd_values = cast(
+            tuple[float, float, float],
+            macd_5m_result,
+        )
 
         bars_1m = self.data.get_latest_bars(
             symbol=self.SYMBOL,
@@ -118,12 +132,12 @@ class AAPLTrendStrategy(Strategy):
         current_close = float(bars_1m[0].close)
 
         # ADX returns: (ADX, +DI, -DI)
-        adx_value = float(adx_5m_result[0])
+        adx_value = float(adx_values[0])
 
         # MACD returns: (MACD, signal, histogram)
-        macd_histogram = float(macd_5m_result[2])
+        macd_histogram = float(macd_values[2])
 
-        current_difference = current_close - float(ema_1m_20)
+        current_difference = current_close - ema_1m_20_value
 
         if self._previous_1m_difference is None:
             self._previous_1m_difference = current_difference
@@ -144,19 +158,19 @@ class AAPLTrendStrategy(Strategy):
         self._previous_1m_difference = current_difference
 
         buy_condition = (
-            float(ema_15m_20) > float(ema_15m_50)
+            ema_15m_20_value > ema_15m_50_value
             and adx_value > 22.0
             and macd_histogram > 0.0
             and crossed_above
-            and 52.0 <= float(rsi_1m) <= 72.0
+            and 52.0 <= rsi_1m_value <= 72.0
         )
 
         sell_condition = (
-            float(ema_15m_20) < float(ema_15m_50)
+            ema_15m_20_value < ema_15m_50_value
             and adx_value > 22.0
             and macd_histogram < 0.0
             and crossed_below
-            and 28.0 <= float(rsi_1m) <= 48.0
+            and 28.0 <= rsi_1m_value <= 48.0
         )
 
         if buy_condition and self._signal_side != "long":
@@ -170,12 +184,12 @@ class AAPLTrendStrategy(Strategy):
             self.logging.info(
                 message="AAPL buy signal submitted",
                 close=current_close,
-                ema_1m_20=float(ema_1m_20),
-                rsi_1m=float(rsi_1m),
+                ema_1m_20=ema_1m_20_value,
+                rsi_1m=rsi_1m_value,
                 adx_5m=adx_value,
                 macd_histogram_5m=macd_histogram,
-                ema_15m_20=float(ema_15m_20),
-                ema_15m_50=float(ema_15m_50),
+                ema_15m_20=ema_15m_20_value,
+                ema_15m_50=ema_15m_50_value,
             )
 
         elif sell_condition and self._signal_side != "short":
@@ -189,10 +203,10 @@ class AAPLTrendStrategy(Strategy):
             self.logging.info(
                 message="AAPL sell signal submitted",
                 close=current_close,
-                ema_1m_20=float(ema_1m_20),
-                rsi_1m=float(rsi_1m),
+                ema_1m_20=ema_1m_20_value,
+                rsi_1m=rsi_1m_value,
                 adx_5m=adx_value,
                 macd_histogram_5m=macd_histogram,
-                ema_15m_20=float(ema_15m_20),
-                ema_15m_50=float(ema_15m_50),
+                ema_15m_20=ema_15m_20_value,
+                ema_15m_50=ema_15m_50_value,
             )
