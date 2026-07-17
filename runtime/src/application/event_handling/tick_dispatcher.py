@@ -6,7 +6,7 @@ from typing import Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from application.context.indicator_context import RuntimeIndicatorContext
-    from application.context.logging_context import RuntimeLoggingContext
+    from application.strategy_execution.callback_executor import StrategyCallbackExecutor
 
 
 class TickDispatcher:
@@ -16,11 +16,11 @@ class TickDispatcher:
         self,
         strategy: Any,
         indicator_context: RuntimeIndicatorContext,
-        logger: RuntimeLoggingContext,
+        callback_executor: StrategyCallbackExecutor,
     ) -> None:
         self._strategy = strategy
         self._indicator_context = indicator_context
-        self._logger = logger
+        self._callback_executor = callback_executor
         self._executor = ThreadPoolExecutor(
             max_workers=1,
             thread_name_prefix="strategy-calculation",
@@ -47,17 +47,12 @@ class TickDispatcher:
 
     async def _run_calculation(self) -> None:
         loop = asyncio.get_running_loop()
-        try:
-            await loop.run_in_executor(
-                self._executor,
-                self._strategy.on_tick,
-            )
-        except Exception as error:
-            self._logger.platform_error(
-                message="Strategy on_tick calculation failed",
-                error_message=str(error),
-                error_type=type(error).__name__,
-            )
+        await loop.run_in_executor(
+            self._executor,
+            self._callback_executor.execute,
+            "on_tick",
+            self._strategy.on_tick,
+        )
 
     async def close(self) -> None:
         """Wait for the active calculation and stop the calculation thread."""

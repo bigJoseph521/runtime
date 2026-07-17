@@ -27,6 +27,10 @@ from src.application.event_handling.tick_dispatcher import TickDispatcher
 from src.application.event_handling.symbol_update_barrier import SymbolUpdateBarrier
 from src.application.warm_up.warmup_service import WarmUpService
 from src.application.symbol_reference.symbol_reference import SymbolReferenceService
+from src.application.strategy_execution import (
+    StrategyCallbackExecutor,
+    StrategyErrorReporter,
+)
 
 from src.infrastructure.config.arg_parser import arg_parse
 from src.infrastructure.config.config import RuntimeConfig
@@ -246,7 +250,19 @@ async def main():
             )
             runtime_strategy = strategy_class()
             runtime_strategy._bind_context(strategy_context)
-            runtime_strategy.initialize()
+            strategy_error_reporter = StrategyErrorReporter(
+                logger=logger,
+                strategy_root=config.strategy_local_path,
+            )
+            strategy_callback_executor = StrategyCallbackExecutor(
+                error_reporter=strategy_error_reporter,
+            )
+            if not strategy_callback_executor.execute(
+                "on_init",
+                runtime_strategy.initialize,
+            ):
+                await status_manager.transform(new_status=Status.FAILED)
+                return
 
             # on_init() only declares requirements. Apply explicit symbol and
             # index subscriptions after user initialization has returned.
@@ -263,7 +279,7 @@ async def main():
             tick_dispatcher = TickDispatcher(
                 strategy=runtime_strategy,
                 indicator_context=indicator_context,
-                logger=logger,
+                callback_executor=strategy_callback_executor,
             )
 
             symbol_update_barrier = SymbolUpdateBarrier(
