@@ -306,7 +306,7 @@ class RuntimeDataContext(DataContext):
                 low = float(low[i]),
                 close = float(close[i]),
                 volume = float(volume[i]),
-                ts= ts[i].astype("datetime64[ms]").to_list()
+                ts= ts[i].astype("datetime64[ms]").tolist()
             )
             for i in range(ts.shape[0])
         )
@@ -332,7 +332,7 @@ class RuntimeDataContext(DataContext):
 
         return tuple(
             Tick(
-                ts= ts[i].astype("datetime64[ms]").to_list(),
+                ts= ts[i].astype("datetime64[ms]").tolist(),
                 price= float(price[i]),
                 volume= float(volume[i]) 
             )
