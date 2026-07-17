@@ -24,6 +24,7 @@ from src.application.event_handling.internal_event_bus import InternalEventBus
 from src.application.event_handling.external_event_bus import ExternalEventBus
 from src.application.event_handling.events_model import InternalEventType, ExternalEventType
 from src.application.event_handling.tick_dispatcher import TickDispatcher
+from src.application.event_handling.symbol_update_barrier import SymbolUpdateBarrier
 from src.application.warm_up.warmup_service import WarmUpService
 from src.application.symbol_reference.symbol_reference import SymbolReferenceService
 
@@ -265,12 +266,17 @@ async def main():
                 logger=logger,
             )
 
-            # Subscribe the strategy last. Schema-3 messages publish the
-            # current bar before the tick, so data and indicators are already
-            # synchronized when user code runs.
+            symbol_update_barrier = SymbolUpdateBarrier(
+                dispatcher=tick_dispatcher,
+                required_timeframes=indicator_context.required_timeframes,
+            )
+
+            # The NATS adapter emits this only after the corresponding bar and
+            # all of its indicators have been updated. The barrier waits for
+            # every required timeframe of the same source sequence.
             external_event_bus.subscribe(
-                event_type=ExternalEventType.TICK,
-                handler=tick_dispatcher.dispatch,
+                event_type=ExternalEventType.TIMEFRAME_APPLIED,
+                handler=symbol_update_barrier.timeframe_applied,
             )
 
             await market_data_listener.set_channels(

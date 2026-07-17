@@ -19,3 +19,4 @@ class ExternalEventType(StrEnum):
     WARMUP_BAR = "warmup_bar"
     INDEX_BAR = "index_bar"
     INDEX_VALUE = "index_value"
+    TIMEFRAME_APPLIED = "timeframe_applied"

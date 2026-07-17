@@ -41,6 +41,14 @@ class ExternalEventBus:
         elif event_type == ExternalEventType.INDEX_VALUE:
             for handler in self._consumers[event_type]:
                 handler(event["index"], event["payload"])
+        elif event_type == ExternalEventType.TIMEFRAME_APPLIED:
+            for handler in self._consumers[event_type]:
+                handler(
+                    event["symbol"],
+                    event["timeframe"],
+                    event["source_sequence"],
+                    event.get("tick"),
+                )
         elif event_type == ExternalEventType.WARMUP_BAR:
             for handler in self._consumers[event_type]:
                 handler(

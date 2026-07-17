@@ -315,23 +315,35 @@ class NATSMarketDataClient(MarketDataPort):
 
             schema = payload[0]
             if schema == 0:
-                if len(payload) < 10:
-                    raise ValueError("invalid custom-bar payload")
                 symbol, bar = from_raw_custom_bar_to_bar(payload)
                 if message.subject.startswith(f"{self._subject_prefix}.index."):
+                    if len(payload) < 10:
+                        raise ValueError("invalid index-bar payload")
                     self._event_bus.publish({
                         "type": ExternalEventType.INDEX_BAR,
                         "index": symbol,
                         "payload": bar,
                     })
                 else:
+                    if len(payload) < 11:
+                        raise ValueError("custom-bar payload is missing source_sequence")
                     timeframe = message.subject.rsplit(".", 1)[-1]
+                    source_sequence = int(payload[10])
                     self._event_bus.publish({
                         "type": ExternalEventType.CURRENT_BAR,
                         "symbol": symbol,
                         "timeframe": timeframe,
                         "payload": bar,
-                        "completed": False,
+                        "completed": bool(payload[9]),
+                    })
+                    # CURRENT_BAR handlers run synchronously. Reaching this
+                    # event means both the data context and every indicator
+                    # for this symbol/timeframe have applied the sequence.
+                    self._event_bus.publish({
+                        "type": ExternalEventType.TIMEFRAME_APPLIED,
+                        "symbol": symbol,
+                        "timeframe": timeframe,
+                        "source_sequence": source_sequence,
                     })
             elif schema == 2:
                 if len(payload) < 7:
@@ -343,21 +355,29 @@ class NATSMarketDataClient(MarketDataPort):
                     "payload": quote,
                 })
             elif schema == 3:
-                if len(payload) < 12:
-                    raise ValueError("invalid tick/current-bar payload")
+                if len(payload) < 13:
+                    raise ValueError("tick/current-bar payload is missing source_sequence")
                 symbol, tick = from_raw_1m_bar_to_tick(payload)
                 _, bar = from_raw_1m_bar_to_bar(payload)
+                source_sequence = int(payload[12])
                 self._event_bus.publish({
                     "type": ExternalEventType.CURRENT_BAR,
                     "symbol": symbol,
                     "timeframe": "1m",
                     "payload": bar,
-                    "completed": False,
+                    "completed": bool(payload[11]),
                 })
                 self._event_bus.publish({
                     "type": ExternalEventType.TICK,
                     "symbol": symbol,
                     "payload": tick,
+                })
+                self._event_bus.publish({
+                    "type": ExternalEventType.TIMEFRAME_APPLIED,
+                    "symbol": symbol,
+                    "timeframe": "1m",
+                    "source_sequence": source_sequence,
+                    "tick": tick,
                 })
             elif schema == 4:
                 if len(payload) != 4:

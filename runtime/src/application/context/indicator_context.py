@@ -221,6 +221,16 @@ class RuntimeIndicatorContext(IndicatorContext):
                 for registered in self._indicators.values()
             })
 
+    def required_timeframes(self, symbol: str) -> frozenset[str]:
+        """Return indicator timeframes that must be applied before on_tick."""
+        normalized_symbol = str(symbol).strip().upper()
+        with self._lock:
+            return frozenset(
+                str(registered.timeframe).strip().lower()
+                for registered in self._indicators.values()
+                if registered.symbol.strip().upper() == normalized_symbol
+            )
+
     async def wait_for_pending_warmups(self) -> None:
         """Wait for registrations already issued by strategy initialization.
 
