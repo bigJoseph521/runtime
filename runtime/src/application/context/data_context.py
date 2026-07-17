@@ -89,6 +89,9 @@ class RuntimeDataContext(DataContext):
         self._index_subscriptions: set[str] = set()
         self._is_new_bar: dict[tuple[str, Timeframe], bool] = {}
         self._warmup_seeded: set[tuple[str, Timeframe]] = set()
+        self._unavailable_data_logged: set[
+            tuple[str, str, str | None]
+        ] = set()
 
         self._storage_client = storage_client
         self._logger = logger
@@ -147,6 +150,46 @@ class RuntimeDataContext(DataContext):
 
         return x
 
+    def _log_data_unavailable_once(
+        self,
+        *,
+        data_type: str,
+        symbol: str,
+        timeframe: str | None = None,
+    ) -> None:
+        key = (data_type, symbol, timeframe)
+        if key in self._unavailable_data_logged:
+            return
+
+        self._unavailable_data_logged.add(key)
+        fields: dict[str, Any] = {
+            "data_type": data_type,
+            "symbol": symbol,
+        }
+        if timeframe is not None:
+            fields["timeframe"] = timeframe
+
+        self._logger.warning(
+            message="Requested market data is not available yet",
+            **fields,
+        )
+        self._logger.platform_warning(
+            message="Subscribed market-data stream has no current value",
+            reason="market_data_not_available",
+            **fields,
+        )
+
+    def _mark_data_available(
+        self,
+        *,
+        data_type: str,
+        symbol: str,
+        timeframe: str | None = None,
+    ) -> None:
+        self._unavailable_data_logged.discard(
+            (data_type, symbol, timeframe)
+        )
+
     #--------------------
     # Runtime Functions
     #--------------------
@@ -162,7 +205,8 @@ class RuntimeDataContext(DataContext):
         if is_new:
             buf.append(bar=bar)
         else:
-            buf.update_current_bar(bar=bar)        
+            buf.update_current_bar(bar=bar)
+
 
     @_synchronized_market_data
     def update_warmup_bar(
@@ -259,12 +303,21 @@ class RuntimeDataContext(DataContext):
         self._index_values[index] = value
 
     @_synchronized_market_data
-    def get_latest_index(self, index: str) -> tuple[Bar | None, float | None]:
+    def get_latest_index(self, index: str) -> tuple[Bar, float] | None:
         normalized_index = str(index).strip().upper()
         if normalized_index not in self._index_subscriptions:
             raise LookupError(f"Index {normalized_index} was not subscribed in on_init()")
         row = self._index_bars.get(normalized_index)
-        bar = None if row is None else Bar(
+        value = self._index_values.get(normalized_index)
+        if row is None or value is None:
+            self._log_data_unavailable_once(
+                data_type="index",
+                symbol=normalized_index,
+            )
+            return None
+
+        self._mark_data_available(data_type="index", symbol=normalized_index)
+        bar = Bar(
             open=float(row.open),
             high=float(row.high),
             low=float(row.low),
@@ -272,16 +325,39 @@ class RuntimeDataContext(DataContext):
             volume=float(row.volume),
             ts=row.ts.astype("datetime64[ms]").tolist(),
         )
-        return bar, self._index_values.get(normalized_index)
+        return bar, float(value)
     
     @_synchronized_market_data
     def get_latest_bars(self, symbol, timeframe, *, start, count, limit = None):
         self._validate_symbol(symbol)
-        buf = self._get_bar_buffer(symbol=symbol, tf=timeframe)
+        normalized_symbol = str(symbol).strip().upper()
+        normalized_timeframe = str(timeframe).strip().lower()
+        subscription = self._symbol_subscriptions.get(normalized_symbol)
+        if (
+            subscription is None
+            or normalized_timeframe not in subscription["bar_timeframes"]
+        ):
+            raise LookupError(
+                f"{normalized_symbol} {normalized_timeframe} bars were not "
+                "subscribed in on_init()"
+            )
+
+        buf = self._get_bar_buffer(
+            symbol=normalized_symbol,
+            tf=normalized_timeframe,
+        )
         # Historical seeding is asynchronous and is owned by WarmUpService.
         # This SDK-facing method remains synchronous and reads the seeded/live
         # ring buffer only.
         
+
+        if buf.size == 0 or start >= buf.size:
+            self._log_data_unavailable_once(
+                data_type="bar",
+                symbol=normalized_symbol,
+                timeframe=normalized_timeframe,
+            )
+            return None
 
         ts = buf.view("ts")
         open_ = buf.view("open")
@@ -299,6 +375,11 @@ class RuntimeDataContext(DataContext):
         close = close[start:end]
         volume = volume[start:end]
         
+        self._mark_data_available(
+            data_type="bar",
+            symbol=normalized_symbol,
+            timeframe=normalized_timeframe,
+        )
         return tuple(
             Bar(
                 open = float(open_[i]),
@@ -306,7 +387,7 @@ class RuntimeDataContext(DataContext):
                 low = float(low[i]),
                 close = float(close[i]),
                 volume = float(volume[i]),
-                ts= ts[i].astype("datetime64[ms]").tolist()
+                ts=ts[i].astype("datetime64[ms]").tolist(),
             )
             for i in range(ts.shape[0])
         )
@@ -314,11 +395,20 @@ class RuntimeDataContext(DataContext):
     @_synchronized_market_data
     def get_latest_ticks(self, symbol, *, start, count, limit = None):
         self._validate_symbol(symbol)
-        buf = self._get_tick_buffer(symbol)
+        normalized_symbol = str(symbol).strip().upper()
+        subscription = self._symbol_subscriptions.get(normalized_symbol)
+        if subscription is None or not subscription["ticks"]:
+            raise LookupError(
+                f"{normalized_symbol} ticks were not subscribed in on_init()"
+            )
 
-        #TODO
-        # if buf.size == 0
-        #   update buf
+        buf = self._get_tick_buffer(normalized_symbol)
+        if buf.size == 0 or start >= buf.size:
+            self._log_data_unavailable_once(
+                data_type="tick",
+                symbol=normalized_symbol,
+            )
+            return None
 
         ts = buf.view("ts")
         price = buf.view("price")
@@ -330,49 +420,86 @@ class RuntimeDataContext(DataContext):
         price = price[start:end]
         volume = volume[start:end]
 
+        self._mark_data_available(
+            data_type="tick",
+            symbol=normalized_symbol,
+        )
         return tuple(
             Tick(
-                ts= ts[i].astype("datetime64[ms]").tolist(),
+                ts=ts[i].astype("datetime64[ms]").tolist(),
                 price= float(price[i]),
                 volume= float(volume[i]) 
             )
-            for i in range(count)
+            for i in range(ts.shape[0])
         )
 
     @_synchronized_market_data
-    def get_current_bar(self, symbol:str, tf:str) -> Bar:
+    def get_current_bar(self, symbol:str, tf:str) -> Bar | None:
         self._validate_symbol(symbol)
-        buf = self._get_bar_buffer(symbol,tf)
+        normalized_symbol = str(symbol).strip().upper()
+        normalized_timeframe = str(tf).strip().lower()
+        subscription = self._symbol_subscriptions.get(normalized_symbol)
+        if (
+            subscription is None
+            or normalized_timeframe not in subscription["bar_timeframes"]
+        ):
+            raise LookupError(
+                f"{normalized_symbol} {normalized_timeframe} bars were not "
+                "subscribed in on_init()"
+            )
+
+        buf = self._get_bar_buffer(normalized_symbol, normalized_timeframe)
 
         if buf.size == 0:
+            self._log_data_unavailable_once(
+                data_type="bar",
+                symbol=normalized_symbol,
+                timeframe=normalized_timeframe,
+            )
             return None
         
         i = (buf.head - 1) % buf.capacity
 
-        return Bar({
-            "ts": int(buf.ts[i]),
-            "open": float(buf.open[i]),
-            "high":float(buf.high[i]),
-            "low": float(buf.low[i]),
-            "close": float(buf.close[i]),
-            "volume": float(buf.volume[i])
-        })
+        self._mark_data_available(
+            data_type="bar",
+            symbol=normalized_symbol,
+            timeframe=normalized_timeframe,
+        )
+        return Bar(
+            ts=buf.ts[i].astype("datetime64[ms]").tolist(),
+            open=float(buf.open[i]),
+            high=float(buf.high[i]),
+            low=float(buf.low[i]),
+            close=float(buf.close[i]),
+            volume=float(buf.volume[i]),
+        )
 
     @_synchronized_market_data
-    def get_latest_tick(self, symbol: str) -> Tick:
+    def get_latest_tick(self, symbol: str) -> Tick | None:
         self._validate_symbol(symbol)
-        buf = self._get_tick_buffer(symbol=symbol)
+        normalized_symbol = str(symbol).strip().upper()
+        subscription = self._symbol_subscriptions.get(normalized_symbol)
+        if subscription is None or not subscription["ticks"]:
+            raise LookupError(
+                f"{normalized_symbol} ticks were not subscribed in on_init()"
+            )
+        buf = self._get_tick_buffer(symbol=normalized_symbol)
         
         if buf.size == 0:
+            self._log_data_unavailable_once(
+                data_type="tick",
+                symbol=normalized_symbol,
+            )
             return None
         
         i = (buf.head - 1) % buf.capacity
 
-        return Tick({
-            "ts": buf.ts[i],
-            "price": buf.price[i],
-            "volume": buf.volume[i]
-        })       
+        self._mark_data_available(data_type="tick", symbol=normalized_symbol)
+        return Tick(
+            ts=buf.ts[i].astype("datetime64[ms]").tolist(),
+            price=float(buf.price[i]),
+            volume=float(buf.volume[i]),
+        )
 
     @_synchronized_market_data
     def is_new_bar(self, symbol, timeframe) -> bool:
@@ -382,15 +509,24 @@ class RuntimeDataContext(DataContext):
     
     # TODO    
     @_synchronized_market_data
-    def get_latest_quote(self, symbol: str) -> Quote:
+    def get_latest_quote(self, symbol: str) -> Quote | None:
         self._validate_symbol(symbol)
-        try:
-            quote = self._quotes[symbol]
-        except KeyError as error:
+        normalized_symbol = str(symbol).strip().upper()
+        subscription = self._symbol_subscriptions.get(normalized_symbol)
+        if subscription is None or not subscription["quotes"]:
             raise LookupError(
-                f"No quote is available for {symbol}"
-            ) from error
+                f"{normalized_symbol} quotes were not subscribed in on_init()"
+            )
 
+        quote = self._quotes.get(normalized_symbol)
+        if quote is None:
+            self._log_data_unavailable_once(
+                data_type="quote",
+                symbol=normalized_symbol,
+            )
+            return None
+
+        self._mark_data_available(data_type="quote", symbol=normalized_symbol)
         return Quote(
             ts=quote.ts.astype("datetime64[ms]").tolist(),
             bid_price=float(quote.bid_price),

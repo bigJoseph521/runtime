@@ -345,10 +345,16 @@ class Strategy(ABC):
                     timeframe=Timeframe.M1,
                 ):
                     return
-                bar = self.data.get_latest_bars(
+                bars = self.data.get_latest_bars(
                     symbol=self.SYMBOL,
                     timeframe=Timeframe.M1,
-                )[0]
+                    start=0,
+                    count=1,
+                )
+                if bars is None:
+                    return
+
+                bar = bars[0]
 
                 bid = self.data.best_bid(self.SYMBOL)
                 ask = self.data.best_ask(self.SYMBOL)

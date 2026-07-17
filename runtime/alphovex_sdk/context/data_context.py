@@ -141,7 +141,7 @@ class DataContext(ABC):
     def get_latest_index(
         self,
         index: Symbol,
-    ) -> tuple[Bar | None, PriceValue | None]:
+    ) -> tuple[Bar, PriceValue] | None:
         """
         Return the current 1m aggregate and latest value for an index.
 
@@ -155,10 +155,9 @@ class DataContext(ABC):
 
         Returns
         -------
-        tuple[Bar | None, PriceValue | None]
-            A pair containing ``(current_1m_aggregate, latest_value)``. Either
-            item is ``None`` until the runtime receives that part of the index
-            data.
+        tuple[Bar, PriceValue] | None
+            A pair containing ``(current_1m_aggregate, latest_value)``, or
+            ``None`` until both values have been received.
 
         Raises
         ------
@@ -170,10 +169,11 @@ class DataContext(ABC):
         --------
         ```python
         def on_tick(self) -> None:
-            spx_bar, spx_value = self.data.get_latest_index("I:SPX")
-
-            if spx_bar is None or spx_value is None:
+            index_data = self.data.get_latest_index("I:SPX")
+            if index_data is None:
                 return
+
+            spx_bar, spx_value = index_data
 
             if spx_value > spx_bar.open:
                 self.logging.info("The index is above its current 1m open")
@@ -190,7 +190,7 @@ class DataContext(ABC):
         start: int,
         count: int,
         limit: int | None = None,
-    ) -> tuple[Bar, ...]:
+    ) -> tuple[Bar, ...] | None:
         """
         Return recent bars for a symbol and timeframe.
 
@@ -213,9 +213,9 @@ class DataContext(ABC):
 
         Returns
         -------
-        tuple[Bar, ...]
-            Bars ordered from newest to oldest. Returns an empty tuple when no
-            matching bars are available.
+        tuple[Bar, ...] | None
+            Bars ordered from newest to oldest, or ``None`` when the
+            subscribed stream has not provided the requested bars yet.
 
         Raises
         ------
@@ -233,8 +233,10 @@ class DataContext(ABC):
             count=20,
         )
 
-        if bars:
-            newest_bar = bars[0]
+        if bars is None:
+            return
+
+        newest_bar = bars[0]
         ```
         """
         ...
@@ -247,7 +249,7 @@ class DataContext(ABC):
         start: int,
         count: int,
         limit: int | None = None,
-    ) -> tuple[Tick, ...]:
+    ) -> tuple[Tick, ...] | None:
         """
         Return recent executed ticks for a symbol.
 
@@ -268,9 +270,9 @@ class DataContext(ABC):
 
         Returns
         -------
-        tuple[Tick, ...]
-            Executed ticks ordered from newest to oldest. Returns an empty
-            tuple when no matching ticks are available.
+        tuple[Tick, ...] | None
+            Executed ticks ordered from newest to oldest, or ``None`` when
+            the subscribed stream has not provided the requested ticks yet.
 
         Raises
         ------
@@ -371,7 +373,7 @@ class DataContext(ABC):
     def get_latest_quote(
         self,
         symbol: Symbol,
-    ) -> Quote:
+    ) -> Quote | None:
         """
         Return the latest bid-and-ask quote for a symbol.
 
@@ -382,13 +384,15 @@ class DataContext(ABC):
 
         Returns
         -------
-        Quote
-            Latest available quote.
+        Quote | None
+            Latest available quote, or ``None`` when the subscribed quote
+            stream has not received its first value yet.
 
         Raises
         ------
         LookupError
-            Raised when no quote is available for the symbol.
+            Raised when quote data for the symbol was not subscribed in
+            ``on_init()``.
         """
         ...
 
