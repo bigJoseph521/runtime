@@ -552,7 +552,7 @@ class RuntimeIndicatorContext(IndicatorContext):
             
             self._logger.platform_info(
                 message="Indicator calculations finished",
-                indicator= registered.handle.key,
+                indicator= registered.indicator.__class__.__name__,
                 symbol=symbol,
                 timeframe=timeframe,
                 window= registered.indicator.required_history,
