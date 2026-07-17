@@ -17,7 +17,7 @@ deployments: dict[str, dict[str, Any]] = {
     DEPLOYMENT_ID: {
         "mode": "paper",
         "deployment_id": DEPLOYMENT_ID,
-        "entrypoint": "sma_crossover:SMACrossOver",
+        "entrypoint": "mystrategy:AAPLTrendStrategy",
         "artifact_uri": "./data/samples/strategy-1/mystrategy.zip",
         "params": {
             "fast": 10,
