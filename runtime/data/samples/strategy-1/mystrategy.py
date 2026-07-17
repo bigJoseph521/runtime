@@ -6,19 +6,18 @@ from alphovex_sdk import (
     ADX,
     EMA,
     MACD,
+    RSI,
     IndicatorUpdateMode,
     OrderType,
     Strategy,
-    RSI
 )
-from alphovex_sdk.models import Bar
+
 
 class AAPLTrendStrategy(Strategy):
     SYMBOL: Final[str] = "AAPL"
     QUANTITY: Final[float] = 1.0
 
     def on_init(self) -> None:
-        # Ticks drive on_tick(). Quotes aren't needed by this strategy.
         self.data.subscribe_symbol(
             symbol=self.SYMBOL,
             ticks=True,
@@ -26,7 +25,7 @@ class AAPLTrendStrategy(Strategy):
             bar_timeframes=("1m", "5m", "15m"),
         )
 
-        # 15m trend indicators.
+        # 15m trend direction.
         self._ema_15m_20 = self.indicator.register(
             indicator=EMA(period=20),
             symbol=self.SYMBOL,
@@ -41,7 +40,7 @@ class AAPLTrendStrategy(Strategy):
             update_mode=IndicatorUpdateMode.TICK,
         )
 
-        # 5m strength and momentum indicators.
+        # 5m trend strength.
         self._adx_5m = self.indicator.register(
             indicator=ADX(period=14),
             symbol=self.SYMBOL,
@@ -49,6 +48,7 @@ class AAPLTrendStrategy(Strategy):
             update_mode=IndicatorUpdateMode.TICK,
         )
 
+        # 5m momentum.
         self._macd_5m = self.indicator.register(
             indicator=MACD(
                 fast_period=12,
@@ -75,23 +75,33 @@ class AAPLTrendStrategy(Strategy):
             update_mode=IndicatorUpdateMode.TICK,
         )
 
-        # Previous close-minus-EMA difference used for crossover detection.
+        # Previous 1m close-minus-EMA difference for crossover detection.
         self._previous_1m_difference: float | None = None
 
-        # Prevent repeated orders while a condition remains true.
-        # Values: "long", "short", or None.
+        # Prevent duplicate orders while the same directional signal remains.
         self._signal_side: str | None = None
 
     def on_tick(self) -> None:
-        ema_15m_20, _ = self.indicator.get_value(self._ema_15m_20)
-        ema_15m_50, _ = self.indicator.get_value(self._ema_15m_50)
-        adx_5m_result, _ = self.indicator.get_value(self._adx_5m)
-        macd_5m_result, _ = self.indicator.get_value(self._macd_5m)
-        ema_1m_20, _ = self.indicator.get_value(self._ema_1m_20)
-        rsi_1m, _ = self.indicator.get_value(self._rsi_1m)
+        ema_15m_20, _ = self.indicator.get_value(
+            self._ema_15m_20
+        )
+        ema_15m_50, _ = self.indicator.get_value(
+            self._ema_15m_50
+        )
+        adx_5m_result, _ = self.indicator.get_value(
+            self._adx_5m
+        )
+        macd_5m_result, _ = self.indicator.get_value(
+            self._macd_5m
+        )
+        ema_1m_20, _ = self.indicator.get_value(
+            self._ema_1m_20
+        )
+        rsi_1m, _ = self.indicator.get_value(
+            self._rsi_1m
+        )
 
-        # The runtime normally suppresses on_tick until registered indicators
-        # are ready. Keep this guard for additional strategy-level safety.
+        # Explicit checks allow mypy to narrow every result.
         if ema_15m_20 is None:
             return
         if ema_15m_50 is None:
@@ -110,14 +120,20 @@ class AAPLTrendStrategy(Strategy):
         ema_1m_20_value = float(ema_1m_20)
         rsi_1m_value = float(rsi_1m)
 
+        # ADX result: ADX, +DI, -DI.
         adx_values = cast(
             tuple[float, float, float],
             adx_5m_result,
         )
+
+        # MACD result: MACD, signal, histogram.
         macd_values = cast(
             tuple[float, float, float],
             macd_5m_result,
         )
+
+        adx_value = float(adx_values[0])
+        macd_histogram = float(macd_values[2])
 
         bars_1m = self.data.get_latest_bars(
             symbol=self.SYMBOL,
@@ -126,19 +142,16 @@ class AAPLTrendStrategy(Strategy):
             count=1,
         )
 
-        if not bars_1m:
+        # The runtime returns None until current 1m data is available.
+        if bars_1m is None:
             return
 
         current_close = float(bars_1m[0].close)
+        current_difference = (
+            current_close - ema_1m_20_value
+        )
 
-        # ADX returns: (ADX, +DI, -DI)
-        adx_value = float(adx_values[0])
-
-        # MACD returns: (MACD, signal, histogram)
-        macd_histogram = float(macd_values[2])
-
-        current_difference = current_close - ema_1m_20_value
-
+        # A previous observation is required to detect a crossover.
         if self._previous_1m_difference is None:
             self._previous_1m_difference = current_difference
             return
@@ -153,8 +166,6 @@ class AAPLTrendStrategy(Strategy):
             and current_difference < 0.0
         )
 
-        # Save it before submitting an order so a submission failure cannot
-        # repeatedly interpret the same price transition as a new crossover.
         self._previous_1m_difference = current_difference
 
         buy_condition = (
@@ -179,6 +190,7 @@ class AAPLTrendStrategy(Strategy):
                 quantity=self.QUANTITY,
                 order_type=OrderType.MARKET,
             )
+
             self._signal_side = "long"
 
             self.logging.info(
@@ -192,12 +204,16 @@ class AAPLTrendStrategy(Strategy):
                 ema_15m_50=ema_15m_50_value,
             )
 
-        elif sell_condition and self._signal_side != "short":
+        elif (
+            sell_condition
+            and self._signal_side != "short"
+        ):
             self.sell(
                 symbol=self.SYMBOL,
                 quantity=self.QUANTITY,
                 order_type=OrderType.MARKET,
             )
+
             self._signal_side = "short"
 
             self.logging.info(
